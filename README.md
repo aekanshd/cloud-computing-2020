@@ -9,7 +9,7 @@ A repository for Mini Project of Cloud Computing, 6th Sem, Computer Science, PES
 
 ### server.js
 
-This serves as the starting point of the Express App server. It attaches route path modules from [api/routes](/api/routes/)
+This serves as the starting point of the Express App server. It attaches route path modules from [api/routes](/api/routes/).
 
 ### api/routes
 
@@ -29,7 +29,7 @@ This folder contains all the path's functions which are related to one another. 
 
 - If it belongs to main, add the path in `api/routes/main.js` and then its controller in `api/controllers/mainController.js`.
 
-- If it does not belong to main, add a new `.js` file under `api/routes` (take main.js as example) and then its function in a separate controller under `api/controllers`.
+- If it does not belong to main, add a new `.js` file under [api/routes](api/routes) (take main.js as example) and then its function in a separate controller under [api/controllers](api/controllers).
 
 ## Why the split?
 
