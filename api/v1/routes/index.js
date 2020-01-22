@@ -1,35 +1,35 @@
-var express = require('express');
-var router = express.Router();
-var path = require("path");
+let express = require('express')
+let router = express.Router()
+let path = require("path")
 
 // Basic Route Demos
 // -----------------
 
-var main = require(path.join(__dirname, '/main'));
-main(router);
+let main = require(path.join(__dirname, '/main'))
+main(router)
 
 /*---------------------------------
   API Specific 404 / Error Handlers
   ---------------------------------*/
 
-// API not found
-router.use(function(req, res, next){
-  res.status(404);
-  res.send();
-});
+// (404) API not found
+router.use((req, res, next) => {
+  res.status(404)
+  res.send()
+})
 
-// erorrs handler
-router.use(function(err, req, res, next){
-  var status = err.status || 500;
-  res.status(status);
+// Error Handler
+router.use((err, req, res, next) => {
+  let status = err.status || 500
+  res.status(status)
   res.json({
     app: "api",
     status: status,
     error: err.message
-  });
-});
+  })
+})
 
 /*-------
   Exports
   -------*/
-module.exports = router;
+module.exports = router
