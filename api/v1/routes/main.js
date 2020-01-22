@@ -7,4 +7,5 @@ module.exports = function(router){
 	// router.get(main+'/path/:param', utils.middleWare, main.finalController);
 
 	router.get('/', mainController.home);
+	router.put('/users', mainController.createUser);
 };

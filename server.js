@@ -29,11 +29,11 @@ app.get('/', function (req, res) {
 }); 
 
 // API routes
-app.use('/api', require('./api/routes/index'));
+app.use('/api/v1', require('./api/v1/routes/index'));
 
 /*---------------
   Server startup
   ---------------*/
 
 var server = require('http').createServer(app);
-server.listen(8000); 
+server.listen(62020); 
