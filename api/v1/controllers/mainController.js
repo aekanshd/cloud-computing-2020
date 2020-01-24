@@ -1,5 +1,6 @@
 let path = require('path')
 let fs = require('fs')
+let mysql = require('mysql'); 
 
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
@@ -70,3 +71,79 @@ exports.getRide = (req, res, next) => {
 		"destination": "{ destination }"
 	})
 }
+
+//8. Write data to Database
+exports.writeDb = (req, res, next) =>{
+	let file = fs.readFileSync('db_credentials.json');
+	let credentials = JSON.parse(file);
+	let conn = mysql.createConnection({
+		host:credentials.host,
+		database:credentials.database,
+		user:credentials.user,
+		password:credentials.password
+	});
+	conn.connect(function(err) {
+		if (err) throw err;
+	  });
+	if(req.body.table==='users'){
+		let sql = `INSERT INTO users(username,password) VALUES(?,?)`;
+		let values = [req.body.username,req.body.password];
+		conn.query(sql,values,(err, results, fields) => {
+			if (err) {
+			  return console.error(err.message);
+			});
+	}
+	else if(req.body.table==='rides'){
+		let sql = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
+		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.created_by;
+		conn.query(get_query,(err, results, fields) => {
+			if (err) {
+			  return console.error(err.message);
+			});
+		let ownerid = results[0].userid;
+		let values = [ownerid,req.body.source,req.body.destination,req.body.timestamp];
+		conn.query(sql,values,(err, results, fields) => {
+			if (err) {
+			  return console.error(err.message);
+			});
+	}
+	else if(req.body.table==='transactions'){
+		let sql = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
+		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.username;
+		conn.query(get_query,(err, results, fields) => {
+			if (err) {
+			  return console.error(err.message);
+			});
+		let userid = results[0].userid;
+		let values = [req.body.rideid,userid,timestamp];
+		conn.query(sql,values,(err, results, fields) => {
+			if (err) {
+			  return console.error(err.message);
+			});
+	}
+
+}
+
+// 9. Read data from Database
+exports.readDb = (req, res, next) =>{
+
+	let file = fs.readFileSync('db_credentials.json');
+	let credentials = JSON.parse(file);
+	let conn = mysql.createConnection({
+		host:credentials.host,
+		database:credentials.database,
+		user:credentials.user,
+		password:credentials.password
+	});
+	conn.connect(function(err) {
+		if (err) throw err;
+	 });
+	let sql=`SELECT * from`+req.body.table+` where `+req.body.where;
+	conn.query(sql,(err, results, fields) => {
+		if (err) {
+		  return console.error(err.message);
+	});
+	res.send({"data":results});
+
+}
+
