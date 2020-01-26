@@ -1,6 +1,7 @@
 const path = require('path')
 const fs = require('fs')
-const sql = require("../models/db.js")
+const sql = require('../models/db.js')
+const request = require('request-promise')
 let query = ''
 
 exports.home = (req, res, next) => {
@@ -77,7 +78,50 @@ exports.createRide = (req, res, next) => {
 
 	console.log("3", createdBy, timestamp, source, destination);
 
-	return res.status(201).send({})
+	if (
+		createdBy.replace(/\s/g, '') === "" ||
+		timestamp.replace(/\s/g, '') === "" ||
+		source.replace(/\s/g, '') === "" ||
+		destination.replace(/\s/g, '') === ""
+	) {
+		return res.status(204)
+	}
+
+	let options = {
+		method: 'POST',
+		uri: '/db/read',
+		body: {},
+		json: true
+	}
+
+	options['body'] = {
+		table: 'users',
+		where: 'username = ' + username
+	}
+
+	request(options)
+		.then(function (response) {
+			options['uri'] = '/db/write'
+			options['body'] = {
+				table: 'rides',
+				created_by: createdBy,
+				timestamp: timestamp,
+				source: source,
+				destination: destination
+			}
+
+			request(options)
+				.then(function (response) {
+					return res.status(201).send({})
+				})
+				.catch(function (err) {
+					return res.status(500)
+				});
+
+		})
+		.catch(function (err) {
+			return res.status(400);
+		})
 }
 
 
@@ -89,18 +133,78 @@ exports.listRides = (req, res, next) => {
 
 	console.log("4", source, destination);
 
-	return res.status(201).send([
-		{
-			"rideId": 1234,
-			"username": "{ username }",
-			"timestamp": "DD- MM - YYYY: SS - MM - HH"
-		},
-		{
-			"rideId": 1234,
-			"username": "{ username }",
-			"timestamp": "DD- MM - YYYY: SS - MM - HH"
-		}
-	])
+	if (
+		source.replace(/\s/g, '') === "" ||
+		destination.replace(/\s/g, '') === ""
+	) {
+		console.log("204")
+		return res.status(204)
+	}
+
+	let options = {
+		method: 'POST',
+		uri: 'http://localhost:62020/api/v1/db/read',
+		body: {},
+		json: true
+	}
+
+	console.log("1")
+
+	options['body'] = {
+		table: 'locations',
+		where: 'name = `' + source + '`'
+	}
+	console.log("2")
+
+	request(options)
+		.then(function (response) {
+			console.log("3")
+			let sourceid = response[0].locationid
+			options['body'] = {
+				table: 'locations',
+				where: 'name = `' + destination + '`'
+			}
+			request(options)
+				.then(function (response) {
+					console.log("4")
+					let destinationid = response[0].locationid
+					options['body'] = {
+						table: 'rides',
+						where: 'source = ' + sourceid + ' AND destination = ' + destinationid
+					}
+					request(options)
+						.then(function (response) {
+							console.log("5")
+							// console.log(response);
+							return res.status(201).send(response)
+						})
+						.catch(function (err) {
+							console.error("Error: 500");
+							return res.status(500)
+						});
+				})
+				.catch(function (err) {
+					console.error("Error: Destination not found")
+					return res.status(400);
+				})
+		})
+		.catch(function (err) {
+			console.error("Error: Source not found")
+			return res.status(400);
+		})
+
+	// return res.status(201).send([
+	// 	{
+	// 		"rideId": 1234,
+	// 		"username": "{ username }",
+	// 		"timestamp": "DD- MM - YYYY: SS - MM - HH"
+	// 	},
+	// 	{
+	// 		"rideId": 1234,
+	// 		"username": "{ username }",
+	// 		"timestamp": "DD- MM - YYYY: SS - MM - HH"
+	// 	}
+	// ])
 }
 
 
@@ -111,14 +215,40 @@ exports.getRide = (req, res, next) => {
 
 	console.log("5", rideId);
 
-	return res.status(201).send({
-		"rideId": "{ rideId }",
-		"Created_by": "{ username }",
-		"users": ["{ username1 }", "{ username1 }"],
-		"Timestamp": "DD - MM - YYYY: SS - MM - HH",
-		"source": "{ source }",
-		"destination": "{ destination }"
-	})
+	if (
+		rideId.replace(/\s/g, '') === ""
+	) {
+		return res.status(204)
+	}
+
+	let options = {
+		method: 'POST',
+		uri: 'http://localhost:62020/api/v1/db/read',
+		body: {},
+		json: true
+	}
+
+	options['body'] = {
+		table: 'rides',
+		where: 'rideid = ' + rideId
+	}
+
+	request(options)
+		.then(function (response) {
+			return res.status(200).send(response)
+		})
+		.catch(function (err) {
+			return res.status(400);
+		})
+
+	// return res.status(201).send({
+	// 	"rideId": "{ rideId }",
+	// 	"Created_by": "{ username }",
+	// 	"users": ["{ username1 }", "{ username1 }"],
+	// 	"Timestamp": "DD - MM - YYYY: SS - MM - HH",
+	// 	"source": "{ source }",
+	// 	"destination": "{ destination }"
+	// })
 }
 
 // 6. Join an existing ride
@@ -126,7 +256,7 @@ exports.getRide = (req, res, next) => {
 exports.joinRide = (req, res, next) => {
 	let rideId = req.params.rideId
 	let username = req.body.username
-	
+
 	console.log("6", rideId, username);
 
 	if (rideId.replace(/\s/g, '') === "" || username.replace(/\s/g, '') === "") {
@@ -137,40 +267,40 @@ exports.joinRide = (req, res, next) => {
 		method: 'POST',
 		uri: '/db/read',
 		body: {},
-		json: true 
-			// JSON stringifies the body automatically
+		json: true
+		// JSON stringifies the body automatically
 	}
-	
-	options['body'] = {}; // remove this if not necessary.
-	options['body'] = {table:'rides', where:'rideid = ' + rideId };
-	​
-	request(options)
-	.then(function (response) {
-		options['body'] = {}; // remove this if not necessary.
-		options['body'] = {table:'users', where:'username = ' + username };
 
-		request(options)
+	options['body'] = {}; // remove this if not necessary.
+	options['body'] = { table: 'rides', where: 'rideid = ' + rideId };
+
+	request(options)
 		.then(function (response) {
-			options['uri'] = '/db/write';
 			options['body'] = {}; // remove this if not necessary.
-			options['body'] = {table:'transactions', username: username, rideid: rideid };
+			options['body'] = { table: 'users', where: 'username = ' + username };
 
 			request(options)
-			.then(function(response) {
-				return res.status(200).send({});
-			})
-			.catch(function(err) {
-				return res.status(500);
-			});
+				.then(function (response) {
+					options['uri'] = '/db/write';
+					options['body'] = {}; // remove this if not necessary.
+					options['body'] = { table: 'transactions', username: username, rideid: rideid };
 
+					request(options)
+						.then(function (response) {
+							return res.status(200).send({});
+						})
+						.catch(function (err) {
+							return res.status(500);
+						});
+
+				})
+				.catch(function (err) {
+					return res.status(400);
+				})
 		})
 		.catch(function (err) {
 			return res.status(400);
 		})
-	})
-	.catch(function (err) {
-		return res.status(400);
-	})
 }
 
 // 7. Delete a ride
@@ -246,11 +376,14 @@ exports.writeDb = (req, res, next) => {
 // 9. Read data from the DB
 
 exports.readDb = (req, res, next) => {
-	query = `SELECT * from` + req.body.table + ` where ` + req.body.where;
+	query = "SELECT * FROM `" + req.body.table + "` WHERE " + req.body.where;
 	sql.query(query, (err, results, fields) => {
-		if (err) return console.error(err.message);
+		if (err) {
+			console.error(err.message)
+			res.status(500).send(err)
+		}
+		res.send({ "data": results });
 	});
-	res.send({ "data": results });
 }
 
 //10. Delete Data from DB
