@@ -173,6 +173,29 @@ exports.joinRide = (req, res, next) => {
 	})
 }
 
+// 7. 
+
+exports.deleteRide = (req, res, next) => {
+	let rideId = req.params.rideId
+	
+	console.log("6", rideId, username);
+
+	if (rideId.replace(/\s/g, '') === "") {
+		return res.status(204);
+	}
+
+	query = `DELETE FROM transactions WHERE rideid = ?`;
+		let values = [rideId];
+		sql.query(query, values, (err, results, fields) => {
+			if (err) {
+				console.error(err.message);
+				return res.status(500);
+			}
+		});
+
+	return res.status(200).send({});
+}
+
 // 8. Write data to the DB
 
 exports.writeDb = (req, res, next) => {
