@@ -173,7 +173,7 @@ exports.joinRide = (req, res, next) => {
 	})
 }
 
-// 7. 
+// 7. Delete a ride
 
 exports.deleteRide = (req, res, next) => {
 	let rideId = req.params.rideId
