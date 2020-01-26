@@ -15,5 +15,5 @@ module.exports = (router) => {
 	// router.delete('/rides/:rideId', mainController.deleteRide) // 7
 	router.post('/db/write', mainController.writeDb) // 8
 	router.post('/db/read', mainController.readDb) // 9
-	router.delete('/db/delete', mainController.deleteDB) //10
+	router.delete('/db/delete', mainController.writeDB) //10
 }
