@@ -41,30 +41,31 @@ exports.createUser = (req, res, next) => {
 
 
 // 2. Delete a User
-
 exports.deleteUser = (req, res, next) => {
-	let username = req.body.username
-	let password = req.body.password
-	query = `SELECT userid from users` + ` where username = ` + req.body.username;
-	sql.query(query, (err, results, fields) => {
-
+	let username = req.params.username
+	query = `SELECT userid from users` + ` where username = "`+username+`"`
+	sql.query(query,(err, result, fields) => {
 		//IF the user is not present, return an error message
 		if (err) {
-			console.error("User not found")
+			console.log("error: "+err.message)
 		}
-	});
-	//if the user is present, delete from the database
-	let user_id = results[0].userid
-	query = `DELETE FROM users where userid = ` + user_id
-	sql.query(query, (err, results, fields) => {
-		if (err) {
-			console.log("Error while deleting")
+		if(result.length == 0){
+			console.log("User Not Found..")
+			return res.status(400).send({})
 		}
-	});
-
-	return res.status(201).send({})
-
-
+		user_id = result[0].userid
+		//if the user is present, delete from the database
+		query = `DELETE FROM users where userid =`+ user_id
+		sql.query(query, (err, result, fields) => {
+			if (err) {
+				console.log(err.message)
+			}
+		});
+		console.log("Deleted user")
+		return res.status(201).send({})
+	
+	})
+	
 }
 
 
@@ -384,7 +385,7 @@ exports.writeDb = (req, res, next) => {
 // 9. Read data from the DB
 
 exports.readDb = (req, res, next) => {
-	query = "SELECT * FROM `" + req.body.table + "` WHERE " + req.body.where;
+	query = `SELECT * FROM ` + req.body.table + ` WHERE ` + req.body.where;
 	sql.query(query, (err, results, fields) => {
 		if (err) {
 			console.error(err.message)
