@@ -171,18 +171,6 @@ exports.joinRide = (req, res, next) => {
 	.catch(function (err) {
 		return res.status(400);
 	})
-	
-	
-	let transaction  = request.post('/db/write', {});
-
-	return res.status(201).send({
-		"rideId": "{ rideId }",
-		"Created_by": "{ username }",
-		"users": ["{ username1 }", "{ username1 }"],
-		"Timestamp": "DD - MM - YYYY: SS - MM - HH",
-		"source": "{ source }",
-		"destination": "{ destination }"
-	})
 }
 
 // 8. Write data to the DB
