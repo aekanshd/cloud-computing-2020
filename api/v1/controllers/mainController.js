@@ -17,19 +17,58 @@ let file = fs.readFileSync('db_credentials.json');
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
-
+// 1. Create a User
 exports.createUser = (req, res, next) => {
 	let username = req.body.username
 	let password = req.body.password
 
 	let hexadecimals = /[0-9A-Fa-f]{6}/g
-	if (hexadecimals.test(password))
-		console.log(password)
+	if (hexadecimals.test(password) && password.length == 40){
+		// read database to see if the user is already present, else write to DB
+		let query = `SELECT * from users` + ` where username = `+req.body.username;
+		sql.query(query, (err, results, fields) => {
+
+			//IF the user is not present, add the user to the database
+			if (err) {
+				let query = `INSERT INTO users(username,password) VALUES(?,?)`;
+				let values = [req.body.username, req.body.password];
+				sql.query(query, values, (err, results, fields) => {
+
+					if (err) return console.error(err.message);
+				});
+			}
+		});
+	}
 	else
 		console.error("Invalid Password (HEX decode error)")
 
 	console.log(username, password)
 	return res.status(201).send({})
+}
+//2. Delete a User
+exports.deleteUser = (req, res, next)=>{
+	let username = req.body.username
+	let password = req.body.password
+	let query = `SELECT userid from users` + ` where username = `+req.body.username;
+	sql.query(query, (err, results, fields) => {
+
+		//IF the user is not present, return an error message
+		if (err) {
+			console.error("User not found")
+		}
+	});
+	//if the user is present, delete from the database
+	let user_id = results[0].userid
+	let query = `DELETE FROM users where userid = ` + user_id
+	sql.query(query, (err, results, fields)=>{
+		if(err){
+			console.log("Error while deleting")
+		}
+	});
+
+	return res.status(201).send({})
+
+
 }
 
 // 3. Create a new ride
