@@ -1,6 +1,6 @@
-let express = require('express')
-let router = express.Router()
-let path = require("path")
+const express = require('express')
+const router = express.Router()
+const path = require("path")
 
 // Basic Route Demos
 // -----------------

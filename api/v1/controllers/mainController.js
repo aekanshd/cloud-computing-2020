@@ -1,6 +1,6 @@
-let path = require('path')
-let fs = require('fs')
-let mysql = require('mysql');
+const path = require('path')
+const fs = require('fs')
+const query = require("../models/db.js");
 
 let file = fs.readFileSync('db_credentials.json');
 	let credentials = JSON.parse(file);
@@ -84,57 +84,50 @@ exports.getRide = (req, res, next) => {
 	})
 }
 
-//8. Write data to Database
-exports.writeDb = (req, res, next) =>{
-	if(req.body.table==='users'){
-		let sql = `INSERT INTO users(username,password) VALUES(?,?)`;
-		let values = [req.body.username,req.body.password];
-		conn.query(sql,values,(err, results, fields) => {
-			if (err) {
-			  return console.error(err.message);
-			}});
+// 8. Write data to the DB
+
+exports.writeDb = (req, res, next) => {
+	if (req.body.table === 'users') {
+		let query = `INSERT INTO users(username,password) VALUES(?,?)`;
+		let values = [req.body.username, req.body.password];
+		sql.query(query, values, (err, results, fields) => {
+			if (err) return console.error(err.message);
+		});
 	}
-	else if(req.body.table==='rides'){
-		let sql = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
+
+	else if (req.body.table === 'rides') {
+		let query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
 		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.created_by;
-		conn.query(get_query,(err, results, fields) => {
-			if (err) {
-			  return console.error(err.message);
-			});
+		sql.query(get_query, (err, results, fields) => {
+			if (err) return console.error(err.message);
+		});
 		let ownerid = results[0].userid;
-		let values = [ownerid,req.body.source,req.body.destination,req.body.timestamp];
-		conn.query(sql,values,(err, results, fields) => {
-			if (err) {
-			  return console.error(err.message);
-			}});
+		let values = [ownerid, req.body.source, req.body.destination, req.body.timestamp];
+		sql.query(query, values, (err, results, fields) => {
+			if (err) return console.error(err.message);
+		});
 	}
-	else if(req.body.table==='transactions'){
-		let sql = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
+
+	else if (req.body.table === 'transactions') {
+		let query = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
 		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.username;
-		conn.query(get_query,(err, results, fields) => {
-			if (err) {
-			  return console.error(err.message);
-			});
+		sql.query(get_query, (err, results, fields) => {
+			if (err) return console.error(err.message);
+		});
 		let userid = results[0].userid;
-		let values = [req.body.rideid,userid,timestamp];
-		conn.query(sql,values,(err, results, fields) => {
-			if (err) {
-			  return console.error(err.message);
-			}});
+		let values = [req.body.rideid, userid, timestamp];
+		sql.query(query, values, (err, results, fields) => {
+			if (err) return console.error(err.message);
+		});
 	}
-
 }
 
-// 9. Read data from Database
-exports.readDb = (req, res, next) =>{
+// 9. Read data from the DB
 
-	
-	let sql=`SELECT * from`+req.body.table+` where `+req.body.where;
-	conn.query(sql,(err, results, fields) => {
-		if (err) {
-		  return console.error(err.message);
-	}});
-	res.send({"data":results});
-
+exports.readDb = (req, res, next) => {
+	let query = `SELECT * from` + req.body.table + ` where ` + req.body.where;
+	sql.query(query, (err, results, fields) => {
+		if (err) return console.error(err.message);
+	});
+	res.send({ "data": results });
 }
-
