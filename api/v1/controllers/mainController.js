@@ -171,18 +171,29 @@ exports.joinRide = (req, res, next) => {
 	.catch(function (err) {
 		return res.status(400);
 	})
-	
-	
-	let transaction  = request.post('/db/write', {});
+}
 
-	return res.status(201).send({
-		"rideId": "{ rideId }",
-		"Created_by": "{ username }",
-		"users": ["{ username1 }", "{ username1 }"],
-		"Timestamp": "DD - MM - YYYY: SS - MM - HH",
-		"source": "{ source }",
-		"destination": "{ destination }"
-	})
+// 7. Delete a ride
+
+exports.deleteRide = (req, res, next) => {
+	let rideId = req.params.rideId
+	
+	console.log("6", rideId, username);
+
+	if (rideId.replace(/\s/g, '') === "") {
+		return res.status(204);
+	}
+
+	query = `DELETE FROM transactions WHERE rideid = ?`;
+		let values = [rideId];
+		sql.query(query, values, (err, results, fields) => {
+			if (err) {
+				console.error(err.message);
+				return res.status(500);
+			}
+		});
+
+	return res.status(200).send({});
 }
 
 // 8. Write data to the DB
