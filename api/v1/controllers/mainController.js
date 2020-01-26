@@ -178,22 +178,30 @@ exports.joinRide = (req, res, next) => {
 exports.deleteRide = (req, res, next) => {
 	let rideId = req.params.rideId
 	
-	console.log("6", rideId, username);
+	console.log("6", rideId);
 
 	if (rideId.replace(/\s/g, '') === "") {
 		return res.status(204);
 	}
+	let db_req = {"table":"transactions","where":"rideid="+rideId};
+	const options = {
+		method: 'DELETE',
+		uri: '/db/delete',
+		body: db_req,
+		json: true 
+			// JSON stringifies the body automatically
+	}
 
-	query = `DELETE FROM transactions WHERE rideid = ?`;
-		let values = [rideId];
-		sql.query(query, values, (err, results, fields) => {
-			if (err) {
-				console.error(err.message);
-				return res.status(500);
-			}
-		});
+		request(options)
+		.then(function(reponse){
+			return res.status(200).send({});
+		})
+		.catch(function(err){
+			console.error(err.message);
+			return res.status(500);
+		})
 
-	return res.status(200).send({});
+	
 }
 
 // 8. Write data to the DB
@@ -247,7 +255,7 @@ exports.readDb = (req, res, next) => {
 
 //10. Delete Data from DB
 exports.deleteDB = (req,res,next) => {
-	query = `DELETE FROM ` + req.table + ` where ` + req.where;
+	query = `DELETE FROM ` + req.body.table + ` where ` + req.body.where;
 	sql.query(query, (err, results, fields) => {
 		if (err) return console.error(err.message);
 	});
