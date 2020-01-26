@@ -233,3 +233,11 @@ exports.readDb = (req, res, next) => {
 	});
 	res.send({ "data": results });
 }
+
+//10. Delete Data from DB
+exports.deleteDB = (req,res,next) => {
+	query = `DELETE FROM ` + req.table + ` where ` + req.where;
+	sql.query(query, (err, results, fields) => {
+		if (err) return console.error(err.message);
+	});
+}
