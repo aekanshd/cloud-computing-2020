@@ -1,24 +1,28 @@
 const path = require('path')
 const fs = require('fs')
-const conn = require("../models/db.js");
+const sql = require("../models/db.js")
+let query = ''
 
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
+
+
 // 1. Create a User
+
 exports.createUser = (req, res, next) => {
 	let username = req.body.username
 	let password = req.body.password
 
 	let hexadecimals = /[0-9A-Fa-f]{6}/g
-	if (hexadecimals.test(password) && password.length == 40){
+	if (hexadecimals.test(password) && password.length == 40) {
 		// read database to see if the user is already present, else write to DB
-		let query = `SELECT * from users` + ` where username = `+req.body.username;
+		query = `SELECT * from users` + ` where username = ` + req.body.username;
 		sql.query(query, (err, results, fields) => {
 
 			//IF the user is not present, add the user to the database
 			if (err) {
-				let query = `INSERT INTO users(username,password) VALUES(?,?)`;
+				query = `INSERT INTO users(username,password) VALUES(?,?)`;
 				let values = [req.body.username, req.body.password];
 				sql.query(query, values, (err, results, fields) => {
 
@@ -33,11 +37,14 @@ exports.createUser = (req, res, next) => {
 	console.log(username, password)
 	return res.status(201).send({})
 }
-//2. Delete a User
-exports.deleteUser = (req, res, next)=>{
+
+
+// 2. Delete a User
+
+exports.deleteUser = (req, res, next) => {
 	let username = req.body.username
 	let password = req.body.password
-	let query = `SELECT userid from users` + ` where username = `+req.body.username;
+	query = `SELECT userid from users` + ` where username = ` + req.body.username;
 	sql.query(query, (err, results, fields) => {
 
 		//IF the user is not present, return an error message
@@ -47,9 +54,9 @@ exports.deleteUser = (req, res, next)=>{
 	});
 	//if the user is present, delete from the database
 	let user_id = results[0].userid
-	let query = `DELETE FROM users where userid = ` + user_id
-	sql.query(query, (err, results, fields)=>{
-		if(err){
+	query = `DELETE FROM users where userid = ` + user_id
+	sql.query(query, (err, results, fields) => {
+		if (err) {
 			console.log("Error while deleting")
 		}
 	});
@@ -58,6 +65,7 @@ exports.deleteUser = (req, res, next)=>{
 
 
 }
+
 
 // 3. Create a new ride
 
@@ -71,6 +79,7 @@ exports.createRide = (req, res, next) => {
 
 	return res.status(201).send({})
 }
+
 
 // 4. List all upcoming rides on a given route
 
@@ -94,6 +103,7 @@ exports.listRides = (req, res, next) => {
 	])
 }
 
+
 // 5. List details of a given ride
 
 exports.getRide = (req, res, next) => {
@@ -111,11 +121,12 @@ exports.getRide = (req, res, next) => {
 	})
 }
 
+
 // 8. Write data to the DB
 
 exports.writeDb = (req, res, next) => {
 	if (req.body.table === 'users') {
-		let query = `INSERT INTO users(username,password) VALUES(?,?)`;
+		query = `INSERT INTO users(username,password) VALUES(?,?)`;
 		let values = [req.body.username, req.body.password];
 		sql.query(query, values, (err, results, fields) => {
 			if (err) return console.error(err.message);
@@ -123,7 +134,7 @@ exports.writeDb = (req, res, next) => {
 	}
 
 	else if (req.body.table === 'rides') {
-		let query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
+		query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
 		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.created_by;
 		sql.query(get_query, (err, results, fields) => {
 			if (err) return console.error(err.message);
@@ -136,7 +147,7 @@ exports.writeDb = (req, res, next) => {
 	}
 
 	else if (req.body.table === 'transactions') {
-		let query = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
+		query = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
 		let get_query = `SELECT userid FROM users WHERE username = ` + req.body.username;
 		sql.query(get_query, (err, results, fields) => {
 			if (err) return console.error(err.message);
@@ -149,10 +160,11 @@ exports.writeDb = (req, res, next) => {
 	}
 }
 
+
 // 9. Read data from the DB
 
 exports.readDb = (req, res, next) => {
-	let query = `SELECT * from` + req.body.table + ` where ` + req.body.where;
+	query = `SELECT * from` + req.body.table + ` where ` + req.body.where;
 	sql.query(query, (err, results, fields) => {
 		if (err) return console.error(err.message);
 	});
