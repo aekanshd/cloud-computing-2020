@@ -1,18 +1,6 @@
 const path = require('path')
 const fs = require('fs')
-const query = require("../models/db.js");
-
-let file = fs.readFileSync('db_credentials.json');
-	let credentials = JSON.parse(file);
-	let conn = mysql.createConnection({
-		host:credentials.host,
-		database:credentials.database,
-		user:credentials.user,
-		password:credentials.password
-	});
-	conn.connect(function(err) {
-		if (err) throw err;
-	 });
+const conn = require("../models/db.js");
 
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
