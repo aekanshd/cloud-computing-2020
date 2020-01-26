@@ -91,7 +91,7 @@ exports.writeDb = (req, res, next) =>{
 		conn.query(sql,values,(err, results, fields) => {
 			if (err) {
 			  return console.error(err.message);
-			});
+			}});
 	}
 	else if(req.body.table==='rides'){
 		let sql = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
@@ -105,7 +105,7 @@ exports.writeDb = (req, res, next) =>{
 		conn.query(sql,values,(err, results, fields) => {
 			if (err) {
 			  return console.error(err.message);
-			});
+			}});
 	}
 	else if(req.body.table==='transactions'){
 		let sql = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
@@ -119,7 +119,7 @@ exports.writeDb = (req, res, next) =>{
 		conn.query(sql,values,(err, results, fields) => {
 			if (err) {
 			  return console.error(err.message);
-			});
+			}});
 	}
 
 }
@@ -142,7 +142,7 @@ exports.readDb = (req, res, next) =>{
 	conn.query(sql,(err, results, fields) => {
 		if (err) {
 		  return console.error(err.message);
-	});
+	}});
 	res.send({"data":results});
 
 }
