@@ -1,6 +1,18 @@
 let path = require('path')
 let fs = require('fs')
-let mysql = require('mysql'); 
+let mysql = require('mysql');
+
+let file = fs.readFileSync('db_credentials.json');
+	let credentials = JSON.parse(file);
+	let conn = mysql.createConnection({
+		host:credentials.host,
+		database:credentials.database,
+		user:credentials.user,
+		password:credentials.password
+	});
+	conn.connect(function(err) {
+		if (err) throw err;
+	 });
 
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
@@ -74,17 +86,6 @@ exports.getRide = (req, res, next) => {
 
 //8. Write data to Database
 exports.writeDb = (req, res, next) =>{
-	let file = fs.readFileSync('db_credentials.json');
-	let credentials = JSON.parse(file);
-	let conn = mysql.createConnection({
-		host:credentials.host,
-		database:credentials.database,
-		user:credentials.user,
-		password:credentials.password
-	});
-	conn.connect(function(err) {
-		if (err) throw err;
-	  });
 	if(req.body.table==='users'){
 		let sql = `INSERT INTO users(username,password) VALUES(?,?)`;
 		let values = [req.body.username,req.body.password];
@@ -127,17 +128,7 @@ exports.writeDb = (req, res, next) =>{
 // 9. Read data from Database
 exports.readDb = (req, res, next) =>{
 
-	let file = fs.readFileSync('db_credentials.json');
-	let credentials = JSON.parse(file);
-	let conn = mysql.createConnection({
-		host:credentials.host,
-		database:credentials.database,
-		user:credentials.user,
-		password:credentials.password
-	});
-	conn.connect(function(err) {
-		if (err) throw err;
-	 });
+	
 	let sql=`SELECT * from`+req.body.table+` where `+req.body.where;
 	conn.query(sql,(err, results, fields) => {
 		if (err) {
