@@ -121,6 +121,69 @@ exports.getRide = (req, res, next) => {
 	})
 }
 
+// 6. Join an existing ride
+
+exports.joinRide = (req, res, next) => {
+	let rideId = req.params.rideId
+	let username = req.body.username
+	
+	console.log("6", rideId, username);
+
+	if (rideId.replace(/\s/g, '') === "" || username.replace(/\s/g, '') === "") {
+		return res.status(204);
+	}
+
+	const options = {
+		method: 'POST',
+		uri: '/db/read',
+		body: {},
+		json: true 
+			// JSON stringifies the body automatically
+	}
+	
+	options['body'] = {}; // remove this if not necessary.
+	options['body'] = {table:'rides', where:'rideid = ' + rideId };
+	​
+	request(options)
+	.then(function (response) {
+		options['body'] = {}; // remove this if not necessary.
+		options['body'] = {table:'users', where:'username = ' + username };
+
+		request(options)
+		.then(function (response) {
+			options['uri'] = '/db/write';
+			options['body'] = {}; // remove this if not necessary.
+			options['body'] = {table:'transactions', username: username, rideid: rideid };
+
+			request(options)
+			.then(function(response) {
+				return res.status(200).send({});
+			})
+			.catch(function(err) {
+				return res.status(500);
+			});
+
+		})
+		.catch(function (err) {
+			return res.status(400);
+		})
+	})
+	.catch(function (err) {
+		return res.status(400);
+	})
+	
+	
+	let transaction  = request.post('/db/write', {});
+
+	return res.status(201).send({
+		"rideId": "{ rideId }",
+		"Created_by": "{ username }",
+		"users": ["{ username1 }", "{ username1 }"],
+		"Timestamp": "DD - MM - YYYY: SS - MM - HH",
+		"source": "{ source }",
+		"destination": "{ destination }"
+	})
+}
 
 // 8. Write data to the DB
 
