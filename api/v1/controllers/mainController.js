@@ -8,62 +8,79 @@ exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
 
-
 // 1. Create a User
-
 exports.createUser = (req, res, next) => {
 	let username = req.body.username
 	let password = req.body.password
 
 	let hexadecimals = /[0-9A-Fa-f]{6}/g
 	if (hexadecimals.test(password) && password.length == 40) {
-		// read database to see if the user is already present, else write to DB
-		query = `SELECT * from users` + ` where username = ` + req.body.username;
-		sql.query(query, (err, results, fields) => {
-
+		let db_req = {"table":"users","where":`username="`+username+`"`};
+		const options = {method: 'POST',uri: 'http://localhost:62020/api/v1/db/read',body: db_req,json: true}
+		request(options)
+		.then(function(results)
+			{
 			//IF the user is not present, add the user to the database
-			if (err) {
-				query = `INSERT INTO users(username,password) VALUES(?,?)`;
-				let values = [req.body.username, req.body.password];
-				sql.query(query, values, (err, results, fields) => {
-
-					if (err) return console.error(err.message);
-				});
+			if (results.length==0) {
+				let db_req = {"table":"users","username":username,"password":password};
+				const options = {method: 'POST',uri: 'http://localhost:62020/api/v1/db/write',body: db_req,json: true}
+				request(options)
+				.then(function(reponse){
+					console.log(username, password)
+					return res.status(201).send({});
+				})
+				.catch(function(err){
+				console.error(err.message);
+					return res.status(400).send({});
+				})
 			}
-		});
+			else{
+				console.error("Username already exists..")
+				return res.status(405).send({});
+			}
+		})
+		.catch(function(err){
+			console.error(err.message);
+			return res.status(400).send({});
+		})
 	}
-	else
+	else{
 		console.error("Invalid Password (HEX decode error)")
-
-	console.log(username, password)
-	return res.status(201).send({})
+		return res.status(405).send({});
+	}
+	
 }
 
 
 // 2. Delete a User
 exports.deleteUser = (req, res, next) => {
 	let username = req.params.username
-	query = `SELECT userid from users` + ` where username = "`+username+`"`
-	sql.query(query,(err, result, fields) => {
+	let db_req = {"table":"users","where":`username="`+username+`"`};
+	const options = {method: 'POST',uri: 'http://localhost:62020/api/v1/db/read',body: db_req,json: true}
+	request(options)
+	.then(function(result){
 		//IF the user is not present, return an error message
-		if (err) {
-			console.log("error: "+err.message)
-		}
 		if(result.length == 0){
-			console.log("User Not Found..")
-			return res.status(400).send({})
+			console.error("User Not Found..")
+			return res.status(405).send({})
 		}
+		console.log("User Exists");
 		user_id = result[0].userid
 		//if the user is present, delete from the database
-		query = `DELETE FROM users where userid =`+ user_id
-		sql.query(query, (err, result, fields) => {
-			if (err) {
-				console.log(err.message)
-			}
-		});
-		console.log("Deleted user")
-		return res.status(201).send({})
-	
+		let db_req = {"table":"users","where":`userid="`+user_id+`"`};
+		const options = {method: 'DELETE',uri: 'http://localhost:62020/api/v1/db/delete',body: db_req,json: true}
+		request(options)
+		.then(function(response){
+			return res.status(201).send({})
+		})
+		.catch(function(err){
+			console.error(err.message);
+			return res.status(400);
+		})	
+	})
+	.catch(function(err){
+		console.error(err.message);
+		return res.status(400);
 	})
 	
 }
@@ -90,7 +107,7 @@ exports.createRide = (req, res, next) => {
 
 	let options = {
 		method: 'POST',
-		uri: '/db/read',
+		uri: 'http://localhost:62020/api/v1/db/read',
 		body: {},
 		json: true
 	}
@@ -102,7 +119,7 @@ exports.createRide = (req, res, next) => {
 
 	request(options)
 		.then(function (response) {
-			options['uri'] = '/db/write'
+			options['uri'] = 'http://localhost:62020/api/v1/db/write'
 			options['body'] = {
 				table: 'rides',
 				created_by: createdBy,
@@ -266,7 +283,7 @@ exports.joinRide = (req, res, next) => {
 
 	const options = {
 		method: 'POST',
-		uri: '/db/read',
+		uri: 'http://localhost:62020/api/v1/db/read',
 		body: {},
 		json: true
 		// JSON stringifies the body automatically
@@ -291,7 +308,7 @@ exports.joinRide = (req, res, next) => {
 							return res.status(200).send({});
 						})
 						.catch(function (err) {
-							return res.status(500);
+							return res.status(400);
 						});
 
 				})
@@ -317,10 +334,10 @@ exports.deleteRide = (req, res, next) => {
 	let db_req = {"table":"transactions","where":"rideid="+rideId};
 	const options = {
 		method: 'DELETE',
-		uri: '/db/delete',
+		uri: 'http://localhost:62020/api/v1/db/delete',
 		body: db_req,
 		json: true 
-			// JSON stringifies the body automatically
+			
 	}
 
 		request(options)
@@ -329,7 +346,7 @@ exports.deleteRide = (req, res, next) => {
 		})
 		.catch(function(err){
 			console.error(err.message);
-			return res.status(500);
+			return res.status(400);
 		})
 
 	
@@ -338,45 +355,77 @@ exports.deleteRide = (req, res, next) => {
 // 8. Write data to the DB
 
 exports.writeDb = (req, res, next) => {
+	
 	if(req.method==='POST'){
+		console.log("Recieved DB write POST request..");
 		if (req.body.table === 'users') {
 			query = `INSERT INTO users(username,password) VALUES(?,?)`;
 			let values = [req.body.username, req.body.password];
 			sql.query(query, values, (err, results, fields) => {
-				if (err) return console.error(err.message);
+				if (err){
+					console.error(err.message);
+					return res.status(400).send(err)
+			   }
+			   return res.status(200).send({})
 			});
+
 		}
 
 		else if (req.body.table === 'rides') {
 			query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
-			let get_query = `SELECT userid FROM users WHERE username = ` + req.body.created_by;
+			let get_query = `SELECT userid FROM users WHERE username = "` + req.body.created_by+`"`;
 			sql.query(get_query, (err, results, fields) => {
-				if (err) return console.error(err.message);
-			});
-			let ownerid = results[0].userid;
-			let values = [ownerid, req.body.source, req.body.destination, req.body.timestamp];
-			sql.query(query, values, (err, results, fields) => {
-				if (err) return console.error(err.message);
+				if (err){
+					console.error(err.message);
+					res.status(400).send(err)
+			   }
+				if(results.length==0) throw new Error('Invalid Username');
+				let ownerid = results[0].userid;
+				let values = [ownerid, req.body.source, req.body.destination, req.body.timestamp];
+				sql.query(query, values, (err, results, fields) => {
+				if (err){
+					console.error(err.message);
+					return res.status(400).send(err)
+			   }
+			   return res.status(200).send({})
+				});
 			});
 		}
 
 		else if (req.body.table === 'transactions') {
 			query = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
-			let get_query = `SELECT userid FROM users WHERE username = ` + req.body.username;
+			let get_query = `SELECT userid FROM users WHERE username = "` + req.body.username+`"`;
 			sql.query(get_query, (err, results, fields) => {
-				if (err) return console.error(err.message);
+				if (err){
+					console.error(err.message);
+					res.status(400).send(err)
+			   }
+				if(results.length==0) {
+					console.error("Invalid Username");
+					return res.status(405);			
+			}
+				let userid = results[0].userid;
+				let values = [req.body.rideid, userid, timestamp];
+				sql.query(query, values, (err, results, fields) => {
+				if (err){
+					console.error(err.message);
+					res.status(400).send(err)
+			   }
 			});
-			let userid = results[0].userid;
-			let values = [req.body.rideid, userid, timestamp];
-			sql.query(query, values, (err, results, fields) => {
-				if (err) return console.error(err.message);
-			});
-		}
+		});
+		}		
 	}
+	
 	else if(req.method==='DELETE'){
+		console.log("Recieved DB write DELETE request..");
 		query = `DELETE FROM ` + req.body.table + ` where ` + req.body.where;
 		sql.query(query, (err, results, fields) => {
-			if (err) return console.error(err.message);
+			if (err){
+				 console.error(err.message);
+				 return res.status(400).send(err)
+			}
+			console.log(results);
+			return res.status(200).send({})
 		});	
 	}
 }
@@ -389,8 +438,9 @@ exports.readDb = (req, res, next) => {
 	sql.query(query, (err, results, fields) => {
 		if (err) {
 			console.error(err.message)
-			res.status(500).send(err)
+			res.status(400).send(err)
 		}
-		res.send({ "data": results });
+		//console.log(results);
+		res.send(results);
 	});
 }

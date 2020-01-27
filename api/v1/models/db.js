@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
 
 // Open the MySQL connection
 connection.connect(error => {
-    if (error) throw error;
+    if (error) console.log(error);
     console.log("Successfully docked to the database.");
 });
 
