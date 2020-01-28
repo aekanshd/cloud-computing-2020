@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 25, 2020 at 11:27 AM
+-- Generation Time: Jan 28, 2020 at 06:43 PM
 -- Server version: 10.1.36-MariaDB
 -- PHP Version: 7.2.10
 
@@ -248,8 +248,13 @@ CREATE TABLE `rides` (
   `ownerid` int(11) NOT NULL,
   `source` int(11) NOT NULL,
   `destination` int(11) NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `time` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `rides`
+--
+
 
 -- --------------------------------------------------------
 
@@ -260,7 +265,7 @@ CREATE TABLE `rides` (
 CREATE TABLE `transactions` (
   `rideid` int(11) NOT NULL,
   `userid` int(11) NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `time` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -278,12 +283,6 @@ CREATE TABLE `users` (
 --
 -- Dumping data for table `users`
 --
-
-INSERT INTO `users` (`userid`, `username`, `password`) VALUES
-(1, 'Ravi', 'password'),
-(2, 'user21', 'pass123'),
-(3, 'new_user', 'new_password');
-
 --
 -- Indexes for dumped tables
 --
@@ -324,13 +323,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `rides`
 --
 ALTER TABLE `rides`
-  MODIFY `rideid` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `rideid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `userid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `userid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- Constraints for dumped tables
