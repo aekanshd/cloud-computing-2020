@@ -102,7 +102,8 @@ exports.createRide = (req, res, next) => {
 		source.replace(/\s/g, '') === "" ||
 		destination.replace(/\s/g, '') === ""
 	) {
-		return res.status(204)
+		console.log("flag1");
+		return res.status(204).send({})
 	}
 
 	let options = {
@@ -114,15 +115,15 @@ exports.createRide = (req, res, next) => {
 
 	options['body'] = {
 		table: 'users',
-		where: 'username = ' + username
+		where: 'username = "' +createdBy +'"'
 	}
 
 	request(options)
-		.then(function (response) {
+		.then(function(response) {
 			options['uri'] = 'http://localhost:62020/api/v1/db/write'
 			options['body'] = {
 				table: 'rides',
-				created_by: createdBy,
+				ownerid: response[0].userid,
 				timestamp: timestamp,
 				source: source,
 				destination: destination
@@ -130,15 +131,18 @@ exports.createRide = (req, res, next) => {
 
 			request(options)
 				.then(function (response) {
+					console.log("Success..")
 					return res.status(201).send({})
 				})
 				.catch(function (err) {
-					return res.status(500)
+					console.log(err)
+					return res.status(400).send({})
 				});
 
 		})
 		.catch(function (err) {
-			return res.status(400);
+			console.log("Flag2");
+			return res.status(400).send({});
 		})
 }
 
@@ -193,22 +197,22 @@ exports.listRides = (req, res, next) => {
 					request(options)
 						.then(function (response) {
 							console.log("5")
-							// console.log(response);
+							 console.log(response);
 							return res.status(201).send(response)
 						})
 						.catch(function (err) {
-							console.error("Error: 500");
-							return res.status(500)
+							console.error("Error: 400");
+							return res.status(400)
 						});
 				})
 				.catch(function (err) {
 					console.error("Error: Destination not found")
-					return res.status(400);
+					return res.status(405);
 				})
 		})
 		.catch(function (err) {
 			console.error("Error: Source not found")
-			return res.status(400);
+			return res.status(405);
 		})
 
 	// return res.status(201).send([
@@ -372,7 +376,7 @@ exports.writeDb = (req, res, next) => {
 		}
 
 		else if (req.body.table === 'rides') {
-			query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
+			/*query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
 			let get_query = `SELECT userid FROM users WHERE username = "` + req.body.created_by+`"`;
 			sql.query(get_query, (err, results, fields) => {
 				if (err){
@@ -380,16 +384,15 @@ exports.writeDb = (req, res, next) => {
 					res.status(400).send(err)
 			   }
 				if(results.length==0) throw new Error('Invalid Username');
-				let ownerid = results[0].userid;
-				let values = [ownerid, req.body.source, req.body.destination, req.body.timestamp];
+				let ownerid = results[0].userid;*/
+				let values = [req.body.ownerid, req.body.source, req.body.destination, req.body.timestamp];
 				sql.query(query, values, (err, results, fields) => {
 				if (err){
 					console.error(err.message);
 					return res.status(400).send(err)
-			   }
-			   return res.status(200).send({})
+				}
+				return res.status(200).send({})
 				});
-			});
 		}
 
 		else if (req.body.table === 'transactions') {
@@ -438,9 +441,9 @@ exports.readDb = (req, res, next) => {
 	sql.query(query, (err, results, fields) => {
 		if (err) {
 			console.error(err.message)
-			res.status(400).send(err)
+			return res.status(400).send(err)
 		}
-		//console.log(results);
+		console.log(results);
 		res.send(results);
 	});
 }
