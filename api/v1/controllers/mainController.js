@@ -98,9 +98,9 @@ exports.createRide = (req, res, next) => {
 
 	if (
 		createdBy.replace(/\s/g, '') === "" ||
-		timestamp.replace(/\s/g, '') === "" ||
+		timestamp.replace(/\s/g, '') === "" /*||
 		source.replace(/\s/g, '') === "" ||
-		destination.replace(/\s/g, '') === ""
+		destination.replace(/\s/g, '') === ""*/
 	) {
 		console.log("flag1");
 		return res.status(204).send({})
@@ -166,67 +166,20 @@ exports.listRides = (req, res, next) => {
 	let options = {
 		method: 'POST',
 		uri: 'http://localhost:62020/api/v1/db/read',
-		body: {},
+		body: {"table":"rides","where":'source='+source+' AND destination='+destination},
 		json: true
 	}
-
-	console.log("1")
-
-	options['body'] = {
-		table: 'locations',
-		where: 'name = `' + source + '`'
-	}
-	console.log("2")
-
 	request(options)
-		.then(function (response) {
-			console.log("3")
-			let sourceid = response[0].locationid
-			options['body'] = {
-				table: 'locations',
-				where: 'name = `' + destination + '`'
-			}
-			request(options)
-				.then(function (response) {
-					console.log("4")
-					let destinationid = response[0].locationid
-					options['body'] = {
-						table: 'rides',
-						where: 'source = ' + sourceid + ' AND destination = ' + destinationid
-					}
-					request(options)
-						.then(function (response) {
-							console.log("5")
-							 console.log(response);
-							return res.status(201).send(response)
-						})
-						.catch(function (err) {
-							console.error("Error: 400");
-							return res.status(400)
-						});
-				})
-				.catch(function (err) {
-					console.error("Error: Destination not found")
-					return res.status(405);
-				})
-		})
-		.catch(function (err) {
-			console.error("Error: Source not found")
-			return res.status(405);
-		})
-
-	// return res.status(201).send([
-	// 	{
-	// 		"rideId": 1234,
-	// 		"username": "{ username }",
-	// 		"timestamp": "DD- MM - YYYY: SS - MM - HH"
-	// 	},
-	// 	{
-	// 		"rideId": 1234,
-	// 		"username": "{ username }",
-	// 		"timestamp": "DD- MM - YYYY: SS - MM - HH"
-	// 	}
-	// ])
+	.then(function (response) {
+		console.log("success")
+		 console.log(response);
+		return res.status(201).send(response)
+	})
+	.catch(function (err) {
+		console.error("Error: 400");
+		return res.status(400)
+	});			
+				
 }
 
 
@@ -236,12 +189,12 @@ exports.getRide = (req, res, next) => {
 	let rideId = req.params.rideId
 
 	console.log("5", rideId);
-
+	/*
 	if (
 		rideId.replace(/\s/g, '') === ""
 	) {
 		return res.status(204)
-	}
+	}*/
 
 	let options = {
 		method: 'POST',
@@ -376,19 +329,11 @@ exports.writeDb = (req, res, next) => {
 		}
 
 		else if (req.body.table === 'rides') {
-			/*query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`;
-			let get_query = `SELECT userid FROM users WHERE username = "` + req.body.created_by+`"`;
-			sql.query(get_query, (err, results, fields) => {
-				if (err){
-					console.error(err.message);
-					res.status(400).send(err)
-			   }
-				if(results.length==0) throw new Error('Invalid Username');
-				let ownerid = results[0].userid;*/
+				let query = `INSERT INTO rides(ownerid,source,destination,time) VALUES(?,?,?,?)`
 				let values = [req.body.ownerid, req.body.source, req.body.destination, req.body.timestamp];
 				sql.query(query, values, (err, results, fields) => {
 				if (err){
-					console.error(err.message);
+					console.error("Error: "+err.message);
 					return res.status(400).send(err)
 				}
 				return res.status(200).send({})
