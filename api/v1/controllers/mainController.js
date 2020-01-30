@@ -251,12 +251,12 @@ exports.getRide = (req, res, next) => {
 					let users = new Array()
 					nextResponse.forEach(element => { users.push(element.userid) })
 					return res.status(200).send({
-						"rideId": response.rideid,
-						"Created_by": response.username,
+						"rideId": response[0].rideid,
+						"Created_by": response[0].username,
 						"users": users,
-						"timestamp": response.time,
-						"source": response.sname,
-						"destination": response.dname
+						"timestamp": response[0].time,
+						"source": response[0].sname,
+						"destination": response[0].dname
 					})
 				})
 				.catch(err => res.status(500).send(err))
