@@ -242,40 +242,40 @@ exports.joinRide = (req, res, next) => {
 		method: 'POST',
 		uri: 'http://localhost:62020/api/v1/db/read',
 		body: {},
-		json: true
-		// JSON stringifies the body automatically
+		json: true // JSON stringifies the body automatically
 	}
 
+	options['uri'] = 'http://localhost:62020/api/v1/db/write';
 	options['body'] = {}; // remove this if not necessary.
-	options['body'] = { table: 'rides', where: 'rideid = ' + rideId };
-
+	options['body'] = { table: 'transactions', username: username, rideid: rideId };
 	request(options)
 		.then(function (response) {
-			options['body'] = {}; // remove this if not necessary.
-			options['body'] = { table: 'users', where: 'username = ' + username };
-
-			request(options)
-				.then(function (response) {
-					options['uri'] = '/db/write';
-					options['body'] = {}; // remove this if not necessary.
-					options['body'] = { table: 'transactions', username: username, rideid: rideid };
-
-					request(options)
-						.then(function (response) {
-							return res.status(200).send({});
-						})
-						.catch(function (err) {
-							return res.status(400);
-						});
-
-				})
-				.catch(function (err) {
-					return res.status(400);
-				})
+			console.log("inside last")
+			return res.status(200).send({});
 		})
 		.catch(function (err) {
 			return res.status(400);
-		})
+		});
+
+	// const options = {
+	// 	method: 'POST',
+	// 	uri: 'http://localhost:62020/api/v1/db/read',
+	// 	body: {},
+	// 	json: true
+	// 	// JSON stringifies the body automatically
+	// }
+
+	// options['body'] = {}; // remove this if not necessary.
+	// options['body'] = { table: 'rides', where: 'rideid = ' + rideId };
+
+	// request(options)
+	// 	.then(function (response) {
+	// 		console.log("in read db rides")
+			
+	// 	})
+	// 	.catch(function (err) {
+	// 		return res.status(400);
+	// 	})
 }
 
 // 7. Delete a ride
@@ -341,9 +341,11 @@ exports.writeDb = (req, res, next) => {
 		}
 
 		else if (req.body.table === 'transactions') {
-			query = `INSERT INTO transations(rideid,userid,time) VALUES(?,?,?)`;
+			query = `INSERT INTO transactions(rideid,userid,time) VALUES(?,?,?)`;
 			let get_query = `SELECT userid FROM users WHERE username = "` + req.body.username+`"`;
+			console.log(get_query)
 			sql.query(get_query, (err, results, fields) => {
+				console.log(results)
 				if (err){
 					console.error(err.message);
 					res.status(400).send(err)
@@ -353,12 +355,17 @@ exports.writeDb = (req, res, next) => {
 					return res.status(405);			
 			}
 				let userid = results[0].userid;
+				let today = new Date();
+				let date = today.getDate()+'-'+(today.getMonth()+1)+today.getFullYear()+':';
+				let time = today.getSeconds() + "-" + today.getMinutes() + "-" + today.getHours();
+				let timestamp = date+' '+time;
 				let values = [req.body.rideid, userid, timestamp];
 				sql.query(query, values, (err, results, fields) => {
 				if (err){
 					console.error(err.message);
 					res.status(400).send(err)
 			   }
+			   return res.status(200).send({});
 			});
 		});
 		}		
@@ -388,7 +395,7 @@ exports.readDb = (req, res, next) => {
 			console.error(err.message)
 			return res.status(400).send(err)
 		}
-		console.log(results);
+		console.log("From readDb:\n", results);
 		res.send(results);
 	});
 }
