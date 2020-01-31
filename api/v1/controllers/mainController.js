@@ -83,7 +83,7 @@ exports.createRide = (req, res, next) => {
 
 	// timestamp = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ')
 
-	console.log("3", createdBy, timestamp, source, destination);
+	console.log("API 3:", createdBy, timestamp, source, destination);
 
 	if (
 		createdBy.replace(/\s/g, '') === "" ||
@@ -104,7 +104,7 @@ exports.createRide = (req, res, next) => {
 
 	request(options)
 		.then(response => {
-			if (response.length === 0) return res.status(404).send("404: Not Found")
+			if (response.length === 0) return res.status(404).send("404: Username Not Found")
 
 			const options = {
 				method: 'POST',
@@ -137,7 +137,7 @@ exports.listRides = (req, res, next) => {
 	let source = req.query.source
 	let destination = req.query.destination
 
-	console.log("4", source, destination);
+	console.log("API 4:", source, destination);
 
 	if (
 		source.replace(/\s/g, '') === "" ||
@@ -152,15 +152,13 @@ exports.listRides = (req, res, next) => {
 	}
 
 	options['body'] = {
-		table: 'locations',
-		where: 'name = "' + source + '"'
+		table: '`locations`',
+		where: '`locationid` = ' + source
 	}
 
 	request(options)
 		.then(response => {
 			if (response.length === 0) return res.status(404).send("404: Source not found")
-
-			let sourceid = response[0].locationid
 
 			const options = {
 				method: 'POST',
@@ -170,15 +168,13 @@ exports.listRides = (req, res, next) => {
 			}
 
 			options['body'] = {
-				table: 'locations',
-				where: 'name = "' + destination + '"'
+				table: '`locations`',
+				where: '`locationid` = ' + destination
 			}
 
 			request(options)
 				.then(response => {
 					if (response.length === 0) return res.status(404).send("404: Destination not found")
-
-					let destinationid = response[0].locationid
 
 					const options = {
 						method: 'POST',
@@ -188,8 +184,8 @@ exports.listRides = (req, res, next) => {
 					}
 
 					options['body'] = {
-						table: 'rides, users',
-						where: 'source = ' + sourceid + ' AND destination = ' + destinationid + ' AND userid = ownerid'
+						table: '`rides`, `users`',
+						where: '`source` = ' + source + ' AND `destination` = ' + destination + ' AND `userid` = `ownerid`'
 					}
 					request(options)
 						.then(response => {
@@ -201,7 +197,7 @@ exports.listRides = (req, res, next) => {
 									"timestamp": element.time
 								})
 							});
-							return res.status(201).send(newResponse)
+							return res.status(200).send(newResponse)
 						})
 						.catch(err => res.status(500).send(err))
 				})
@@ -216,7 +212,9 @@ exports.listRides = (req, res, next) => {
 exports.getRide = (req, res, next) => {
 	let rideId = req.params.rideId
 
-	console.log("5", rideId);
+	console.log("API 5:", rideId)
+
+	if (rideId.replace(/\s/g, '') === "") return res.status(204).send()
 
 	const options = {
 		method: 'POST',
@@ -226,9 +224,8 @@ exports.getRide = (req, res, next) => {
 	}
 
 	options['body'] = {
-		select: '*, `L1`.name AS `sname`, `L2`.name AS `dname`',
-		table: '`rides`, `users`, `locations` AS `L1`, `locations` AS `L2`',
-		where: 'rideid = ' + rideId + ' AND userid = ownerid AND `L1`.locationid = source AND `L2`.locationid = destination'
+		table: '`rides`, `users`',
+		where: '`rideid` = ' + rideId + ' AND `userid` = `ownerid`'
 	}
 
 	request(options)
@@ -241,8 +238,8 @@ exports.getRide = (req, res, next) => {
 			}
 
 			options['body'] = {
-				table: 'transactions',
-				where: 'rideid = ' + rideId
+				table: '`transactions`',
+				where: '`rideid` = ' + rideId
 			}
 
 			request(options)
@@ -255,8 +252,8 @@ exports.getRide = (req, res, next) => {
 						"Created_by": response[0].username,
 						"users": users,
 						"timestamp": response[0].time,
-						"source": response[0].sname,
-						"destination": response[0].dname
+						"source": response[0].source,
+						"destination": response[0].destination
 					})
 				})
 				.catch(err => res.status(500).send(err))
@@ -398,6 +395,10 @@ exports.writeDb = (req, res, next) => {
 					}
 				});
 			});
+		}
+
+		else {
+			res.status(400).send('Table Not Supported')
 		}
 	}
 
