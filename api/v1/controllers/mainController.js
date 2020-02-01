@@ -8,13 +8,14 @@ exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
 
-// 1. Create a User
+// 1. Creates a User
+
 exports.createUser = (req, res, next) => {
 	let username = req.body.username
-	let password = req.body.password
+	let password = req.body.password.toUpperCase()
 
-	let hexadecimals = /[0-9A-Fa-f]{6}/g
-	if (hexadecimals.test(password) && password.length == 40) {
+	let hexadecimals = /^[0-9A-F]{40}$/
+	if (hexadecimals.test(password)) {
 		let db_req = { "table": "users", "where": `username="` + username + `"` };
 		const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/read', body: db_req, json: true }
 		request(options)
@@ -32,20 +33,21 @@ exports.createUser = (req, res, next) => {
 				}
 				else {
 					console.error("Username already exists..")
-					return res.status(405).send({});
+					return res.status(409).send({});
 				}
 			})
 			.catch(err => res.status(500).send(err))
 	}
 	else {
 		console.error("Invalid Password (HEX decode error)")
-		return res.status(405).send({});
+		return res.status(400).send({});
 	}
 
 }
 
 
 // 2. Delete a User
+
 exports.deleteUser = (req, res, next) => {
 	let username = req.params.username
 	let db_req = { "table": "users", "where": `username="` + username + `"` };
@@ -55,7 +57,7 @@ exports.deleteUser = (req, res, next) => {
 			//IF the user is not present, return an error message
 			if (result.length == 0) {
 				console.error("User Not Found..")
-				return res.status(405).send({})
+				return res.status(404).send({})
 			}
 			console.log("User Exists");
 			user_id = result[0].userid
@@ -64,7 +66,7 @@ exports.deleteUser = (req, res, next) => {
 			const options = { method: 'DELETE', uri: 'http://localhost:62020/api/v1/db/delete', body: db_req, json: true }
 			request(options)
 				.then(response => {
-					return res.status(201).send({})
+					return res.status(200).send({})
 				})
 				.catch(err => res.status(500).send(err))
 		})
@@ -83,12 +85,7 @@ exports.createRide = (req, res, next) => {
 
 	// timestamp = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ')
 
-	console.log("API 3:", createdBy, timestamp, source, destination);
-
-	if (
-		createdBy.replace(/\s/g, '') === "" ||
-		timestamp.replace(/\s/g, '') === ""
-	) return res.status(204).send()
+	console.log("API 3:", createdBy, timestamp, source, destination)
 
 	const options = {
 		method: 'POST',
@@ -140,9 +137,24 @@ exports.listRides = (req, res, next) => {
 	console.log("API 4:", source, destination);
 
 	if (
+		!source ||
+		!destination ||
 		source.replace(/\s/g, '') === "" ||
 		destination.replace(/\s/g, '') === ""
 	) return res.status(204).send()
+
+	// let isNotPositiveInteger(str) => {
+	// 	str = str.trim()
+	// 	if (!str) return true
+	// 	str = str.replace(/^0+/, "") || "0"
+	// 	var n = Math.floor(Number(str))
+	// 	return n === Infinity || String(n) !== str || n < 0
+	// }
+
+	// if (isNotPositiveInteger(source) || isNotPositiveInteger(destination)) return res.status(405).send()
+
+	let enumTest = /^(0|[1-9]\d*)$/
+	if (!enumTest.test(source) || !enumTest.test(destination)) return res.status(405).send()
 
 	const options = {
 		method: 'POST',
@@ -230,6 +242,8 @@ exports.getRide = (req, res, next) => {
 
 	request(options)
 		.then(response => {
+			if (response.length === 0) return res.status(404).send("404: Ride ID Not Found")
+
 			const options = {
 				method: 'POST',
 				uri: 'http://localhost:62020/api/v1/db/read',
