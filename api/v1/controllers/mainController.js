@@ -15,21 +15,30 @@ exports.createUser = (req, res, next) => {
 	let password = req.body.password.toUpperCase()
 
 	let hexadecimals = /^[0-9A-F]{40}$/
-	if (hexadecimals.test(password)) {
+
 		let db_req = { "table": "users", "where": `username="` + username + `"` };
 		const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/read', body: db_req, json: true }
 		request(options)
 			.then((results) => {
 				//IF the user is not present, add the user to the database
 				if (results.length == 0) {
-					let db_req = { "table": "users", "username": username, "password": password };
-					const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/write', body: db_req, json: true }
-					request(options)
-						.then((reponse) => {
-							console.log(username, password)
-							return res.status(201).send({});
-						})
+					if(hexadecimals.test(password)){
+
+						let db_req = { "table": "users", "username": username, "password": password };
+						const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/write', body: db_req, json: true }
+						request(options)
+							.then((reponse) => {
+
+								console.log(username, password)
+								return res.status(201).send({});
+							})
 						.catch(err => res.status(500).send(err))
+					}
+					else{
+						console.error("Invalid Password (HEX Decode Error)")
+						return res.status(400).send({});
+					}
+					
 				}
 				else {
 					console.error("Username already exists..")
@@ -37,11 +46,8 @@ exports.createUser = (req, res, next) => {
 				}
 			})
 			.catch(err => res.status(500).send(err))
-	}
-	else {
-		console.error("Invalid Password (HEX decode error)")
-		return res.status(400).send({});
-	}
+	
+
 
 }
 
