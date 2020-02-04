@@ -271,15 +271,6 @@ CREATE TABLE IF NOT EXISTS `rides` (
 
 TRUNCATE TABLE `rides`;
 --
--- Dumping data for table `rides`
---
-
-INSERT INTO `rides` (`rideid`, `ownerid`, `source`, `destination`, `time`) VALUES
-(1, 1, 3, 114, '2020-01-26 13:27:16'),
-(2, 3, 3, 114, '2020-01-26 13:28:20'),
-(3, 2, 3, 192, '2020-01-26 13:28:45'),
-(4, 1, 1, 3, '2015-03-25 06:30:00');
-
 -- --------------------------------------------------------
 
 --
@@ -304,16 +295,6 @@ TRUNCATE TABLE `transactions`;
 -- Dumping data for table `transactions`
 --
 
-INSERT INTO `transactions` (`rideid`, `userid`, `time`) VALUES
-(1, 1, '2020-01-30 15:01:06'),
-(1, 2, '2020-01-30 15:01:06'),
-(1, 3, '2020-01-30 15:01:06'),
-(2, 1, '2020-01-30 15:01:06'),
-(3, 3, '2020-01-30 15:01:06');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `users`
 --
 
@@ -330,19 +311,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 TRUNCATE TABLE `users`;
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`userid`, `username`, `password`) VALUES
-(1, 'Ravi', 'password'),
-(2, 'user21', 'pass123'),
-(3, 'new_user', 'new_password');
-
---
--- Constraints for dumped tables
---
-
 --
 -- Constraints for table `rides`
 --

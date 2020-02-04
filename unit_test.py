@@ -1,6 +1,5 @@
 import requests
 
-
 url = "http://localhost:62020/api/v1/users"
 data = {"username":"Hvish26", "password":"abcdef1234abcdef1234abcdef1234abcdef1234"}
 def test_put_user1():
