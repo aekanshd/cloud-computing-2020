@@ -16,37 +16,37 @@ exports.createUser = (req, res, next) => {
 
 	let hexadecimals = /^[0-9A-F]{40}$/
 
-		let db_req = { "table": "users", "where": `username="` + username + `"` };
-		const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/read', body: db_req, json: true }
-		request(options)
-			.then((results) => {
-				//IF the user is not present, add the user to the database
-				if (results.length == 0) {
-					if(hexadecimals.test(password)){
+	let db_req = { "table": "users", "where": `username="` + username + `"` };
+	const options = { method: 'POST', uri: 'http://localhost/api/v1/db/read', body: db_req, json: true }
+	request(options)
+		.then((results) => {
+			//IF the user is not present, add the user to the database
+			if (results.length == 0) {
+				if (hexadecimals.test(password)) {
 
-						let db_req = { "table": "users", "username": username, "password": password };
-						const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/write', body: db_req, json: true }
-						request(options)
-							.then((reponse) => {
+					let db_req = { "table": "users", "username": username, "password": password };
+					const options = { method: 'POST', uri: 'http://localhost/api/v1/db/write', body: db_req, json: true }
+					request(options)
+						.then((reponse) => {
 
-								console.log(username, password)
-								return res.status(201).send({});
-							})
+							console.log(username, password)
+							return res.status(201).send({});
+						})
 						.catch(err => res.status(500).send(err))
-					}
-					else{
-						console.error("Invalid Password (HEX Decode Error)")
-						return res.status(400).send({});
-					}
-					
 				}
 				else {
-					console.error("Username already exists..")
-					return res.status(409).send({});
+					console.error("Invalid Password (HEX Decode Error)")
+					return res.status(400).send({});
 				}
-			})
-			.catch(err => res.status(500).send(err))
-	
+
+			}
+			else {
+				console.error("Username already exists..")
+				return res.status(409).send({});
+			}
+		})
+		.catch(err => res.status(500).send(err))
+
 
 
 }
@@ -57,7 +57,7 @@ exports.createUser = (req, res, next) => {
 exports.deleteUser = (req, res, next) => {
 	let username = req.params.username
 	let db_req = { "table": "users", "where": `username="` + username + `"` };
-	const options = { method: 'POST', uri: 'http://localhost:62020/api/v1/db/read', body: db_req, json: true }
+	const options = { method: 'POST', uri: 'http://localhost/api/v1/db/read', body: db_req, json: true }
 	request(options)
 		.then((result) => {
 			//IF the user is not present, return an error message
@@ -69,7 +69,7 @@ exports.deleteUser = (req, res, next) => {
 			user_id = result[0].userid
 			//if the user is present, delete from the database
 			let db_req = { "table": "users", "where": `userid="` + user_id + `"` };
-			const options = { method: 'DELETE', uri: 'http://localhost:62020/api/v1/db/delete', body: db_req, json: true }
+			const options = { method: 'DELETE', uri: 'http://localhost/api/v1/db/delete', body: db_req, json: true }
 			request(options)
 				.then(response => {
 					return res.status(200).send({})
@@ -95,7 +95,7 @@ exports.createRide = (req, res, next) => {
 
 	const options = {
 		method: 'POST',
-		uri: 'http://localhost:62020/api/v1/db/read',
+		uri: 'http://localhost/api/v1/db/read',
 		body: {},
 		json: true
 	}
@@ -107,11 +107,11 @@ exports.createRide = (req, res, next) => {
 
 	request(options)
 		.then(response => {
-			if (response.length === 0) return res.status(404).send("404: Username Not Found")
+			if (response.length === 0) return res.status(404).send({})
 
 			const options = {
 				method: 'POST',
-				uri: 'http://localhost:62020/api/v1/db/write',
+				uri: 'http://localhost/api/v1/db/write',
 				body: {},
 				json: true
 			}
@@ -128,9 +128,9 @@ exports.createRide = (req, res, next) => {
 				.then(response => {
 					return res.status(201).send({})
 				})
-				.catch(err => res.status(500).send(err))
+				.catch(err => res.status(500).send({}))
 		})
-		.catch(err => res.status(500).send(err))
+		.catch(err => res.status(500).send({}))
 }
 
 
@@ -160,11 +160,11 @@ exports.listRides = (req, res, next) => {
 	// if (isNotPositiveInteger(source) || isNotPositiveInteger(destination)) return res.status(405).send()
 
 	let enumTest = /^(0|[1-9]\d*)$/
-	if (!enumTest.test(source) || !enumTest.test(destination)) return res.status(405).send()
+	if (!enumTest.test(source) || !enumTest.test(destination)) return res.status(400).send()
 
 	const options = {
 		method: 'POST',
-		uri: 'http://localhost:62020/api/v1/db/read',
+		uri: 'http://localhost/api/v1/db/read',
 		body: {},
 		json: true
 	}
@@ -180,7 +180,7 @@ exports.listRides = (req, res, next) => {
 
 			const options = {
 				method: 'POST',
-				uri: 'http://localhost:62020/api/v1/db/read',
+				uri: 'http://localhost/api/v1/db/read',
 				body: {},
 				json: true
 			}
@@ -196,7 +196,7 @@ exports.listRides = (req, res, next) => {
 
 					const options = {
 						method: 'POST',
-						uri: 'http://localhost:62020/api/v1/db/read',
+						uri: 'http://localhost/api/v1/db/read',
 						body: {},
 						json: true
 					}
@@ -217,11 +217,11 @@ exports.listRides = (req, res, next) => {
 							});
 							return res.status(200).send(newResponse)
 						})
-						.catch(err => res.status(500).send(err))
+						.catch(err => res.status(500).send({}))
 				})
-				.catch(err => res.status(500).send(err))
+				.catch(err => res.status(500).send({}))
 		})
-		.catch(err => res.status(500).send(err))
+		.catch(err => res.status(500).send({}))
 }
 
 
@@ -236,7 +236,7 @@ exports.getRide = (req, res, next) => {
 
 	const options = {
 		method: 'POST',
-		uri: 'http://localhost:62020/api/v1/db/read',
+		uri: 'http://localhost/api/v1/db/read',
 		body: {},
 		json: true
 	}
@@ -252,7 +252,7 @@ exports.getRide = (req, res, next) => {
 
 			const options = {
 				method: 'POST',
-				uri: 'http://localhost:62020/api/v1/db/read',
+				uri: 'http://localhost/api/v1/db/read',
 				body: {},
 				json: true
 			}
@@ -276,9 +276,9 @@ exports.getRide = (req, res, next) => {
 						"destination": response[0].destination
 					})
 				})
-				.catch(err => res.status(500).send(err))
+				.catch(err => res.status(500).send({}))
 		})
-		.catch(err => res.status(500).send(err))
+		.catch(err => res.status(500).send({}))
 }
 
 // 6. Join an existing ride
@@ -295,12 +295,12 @@ exports.joinRide = (req, res, next) => {
 
 	const options = {
 		method: 'POST',
-		uri: 'http://localhost:62020/api/v1/db/read',
+		uri: 'http://localhost/api/v1/db/read',
 		body: {},
 		json: true // JSON stringifies the body automatically
 	}
 
-	options['uri'] = 'http://localhost:62020/api/v1/db/write';
+	options['uri'] = 'http://localhost/api/v1/db/write';
 	options['body'] = {}; // remove this if not necessary.
 	options['body'] = { table: 'transactions', username: username, rideid: rideId };
 	request(options)
@@ -314,7 +314,7 @@ exports.joinRide = (req, res, next) => {
 
 	// const options = {
 	// 	method: 'POST',
-	// 	uri: 'http://localhost:62020/api/v1/db/read',
+	// 	uri: 'http://localhost/api/v1/db/read',
 	// 	body: {},
 	// 	json: true
 	// 	// JSON stringifies the body automatically
@@ -346,7 +346,7 @@ exports.deleteRide = (req, res, next) => {
 	let db_req = { "table": "transactions", "where": "rideid=" + rideId };
 	const options = {
 		method: 'DELETE',
-		uri: 'http://localhost:62020/api/v1/db/delete',
+		uri: 'http://localhost/api/v1/db/delete',
 		body: db_req,
 		json: true
 

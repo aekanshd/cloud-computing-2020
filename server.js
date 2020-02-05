@@ -1,7 +1,7 @@
 var express = require('express')
 const path = require('path')
 const fs = require('fs')
-const port = 62020
+const port = process.env.PORT || 80
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 
