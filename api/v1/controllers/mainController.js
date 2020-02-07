@@ -149,15 +149,6 @@ exports.listRides = (req, res, next) => {
 		destination.replace(/\s/g, '') === ""
 	) return res.status(204).send()
 
-	// let isNotPositiveInteger(str) => {
-	// 	str = str.trim()
-	// 	if (!str) return true
-	// 	str = str.replace(/^0+/, "") || "0"
-	// 	var n = Math.floor(Number(str))
-	// 	return n === Infinity || String(n) !== str || n < 0
-	// }
-
-	// if (isNotPositiveInteger(source) || isNotPositiveInteger(destination)) return res.status(405).send()
 
 	let enumTest = /^(0|[1-9]\d*)$/
 	if (!enumTest.test(source) || !enumTest.test(destination)) return res.status(400).send()
@@ -176,7 +167,7 @@ exports.listRides = (req, res, next) => {
 
 	request(options)
 		.then(response => {
-			if (response.length === 0) return res.status(404).send("404: Source not found")
+			if (response.length === 0) return res.status(400).send("400: Invalid Source")
 
 			const options = {
 				method: 'POST',
@@ -192,7 +183,7 @@ exports.listRides = (req, res, next) => {
 
 			request(options)
 				.then(response => {
-					if (response.length === 0) return res.status(404).send("404: Destination not found")
+					if (response.length === 0) return res.status(400).send("400: Invalid Destination")
 
 					const options = {
 						method: 'POST',
@@ -208,6 +199,7 @@ exports.listRides = (req, res, next) => {
 					request(options)
 						.then(response => {
 							var newResponse = new Array()
+							if(response.length==0) return res.status(204).send([])
 							response.forEach(element => {
 								newResponse.push({
 									"rideId": element.rideid,
@@ -312,25 +304,7 @@ exports.joinRide = (req, res, next) => {
 			return res.status(400);
 		});
 
-	// const options = {
-	// 	method: 'POST',
-	// 	uri: 'http://localhost/api/v1/db/read',
-	// 	body: {},
-	// 	json: true
-	// 	// JSON stringifies the body automatically
-	// }
-
-	// options['body'] = {}; // remove this if not necessary.
-	// options['body'] = { table: 'rides', where: 'rideid = ' + rideId };
-
-	// request(options)
-	// 	.then(function (response) {
-	// 		console.log("in read db rides")
-
-	// 	})
-	// 	.catch(function (err) {
-	// 		return res.status(400);
-	// 	})
+	
 }
 
 // 7. Delete a ride
@@ -343,18 +317,34 @@ exports.deleteRide = (req, res, next) => {
 	if (rideId.replace(/\s/g, '') === "") {
 		return res.status(204);
 	}
-	let db_req = { "table": "transactions", "where": "rideid=" + rideId };
+
+	let db_req = { "table": "rides", "where": "rideid=" + rideId };
 	const options = {
-		method: 'DELETE',
-		uri: 'http://localhost/api/v1/db/write',
+		method: 'POST',
+		uri: 'http://localhost/api/v1/db/read',
 		body: db_req,
 		json: true
 
 	}
-
 	request(options)
-		.then((reponse) => {
-			return res.status(200).send({});
+		.then((response) => {
+			if(response.length==0)
+			{
+				console.error("Ride Not Found..")
+				return res.status(400).send({})
+			}
+			let db_req = { "table": "rides", "where": "rideid=" + rideId };
+			const options = {
+				method: 'DELETE',
+				uri: 'http://localhost/api/v1/db/write',
+				body: db_req,
+				json: true
+			}
+			request(options)
+				.then((response) => {
+					return res.status(200).send({});
+				})
+				.catch(err => res.status(500).send(err))
 		})
 		.catch(err => res.status(500).send(err))
 }
@@ -431,7 +421,7 @@ exports.writeDb = (req, res, next) => {
 				return res.status(400).send(err)
 			}
 			console.log(results);
-			return res.status(200).send({})
+			return res.status(200).send(results)
 		});
 	}
 }
