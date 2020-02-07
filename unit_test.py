@@ -65,18 +65,18 @@ def test_put_ride():
 def test_put_ride2():
     url = "http://localhost/api/v1/rides"
     data = {"created_by": "AEK", "timestamp": "12-12-1998:23-23-12",
-            "source": "Vidyaranyapura", "destination": "Vijayanapura"}
+            "source": "9", "destination": "123"}
     out = requests.post(url, data=data).status_code
     assert out == 404
 
 
 def test_list_ride1():
-    url = "http://localhost/api/v1/rides?source=Vidyaranyapura&destination=Vijayanapura"
+    url = "http://localhost/api/v1/rides?source=9&destination=123"
     out = requests.post(url).status_code
     assert out == 200
 
 
 def test_list_ride2():
-    url = "http://localhost/api/v1/rides?source=Vidyaranura&destination=Vijanapura"
+    url = "http://localhost/api/v1/rides?source=9&destination=123"
     out = requests.post(url).status_code
     assert out == 404

@@ -63,13 +63,13 @@ exports.deleteUser = (req, res, next) => {
 			//IF the user is not present, return an error message
 			if (result.length == 0) {
 				console.error("User Not Found..")
-				return res.status(404).send({})
+				return res.status(400).send({})
 			}
 			console.log("User Exists");
 			user_id = result[0].userid
 			//if the user is present, delete from the database
-			let db_req = { "table": "users", "where": `userid="` + user_id + `"` };
-			const options = { method: 'DELETE', uri: 'http://localhost/api/v1/db/delete', body: db_req, json: true }
+			let db_req = { "table": "users", "where": `userid=` + user_id };
+			const options = { method: 'DELETE', uri: 'http://localhost/api/v1/db/write', body: db_req, json: true }
 			request(options)
 				.then(response => {
 					return res.status(200).send({})
@@ -346,7 +346,7 @@ exports.deleteRide = (req, res, next) => {
 	let db_req = { "table": "transactions", "where": "rideid=" + rideId };
 	const options = {
 		method: 'DELETE',
-		uri: 'http://localhost/api/v1/db/delete',
+		uri: 'http://localhost/api/v1/db/write',
 		body: db_req,
 		json: true
 
