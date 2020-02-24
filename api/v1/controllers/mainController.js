@@ -46,9 +46,6 @@ exports.createUser = (req, res, next) => {
 			}
 		})
 		.catch(err => res.status(500).send(err))
-
-
-
 }
 
 
@@ -60,7 +57,7 @@ exports.deleteUser = (req, res, next) => {
 	const options = { method: 'POST', uri: 'http://localhost/api/v1/db/read', body: db_req, json: true }
 	request(options)
 		.then((result) => {
-			//IF the user is not present, return an error message
+			// IF the user is not present, return an error message
 			if (result.length == 0) {
 				console.error("User Not Found..")
 				return res.status(400).send({})
@@ -112,13 +109,11 @@ exports.listUsers = (req,res,next) => {
 
 exports.createRide = (req, res, next) => {
 	let createdBy = req.body.created_by
-	let timestamp = req.body.timestamp// || new Date()
+	let timestamp = req.body.timestamp
 	let source = req.body.source
 	let destination = req.body.destination
 
-	// timestamp = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ')
-
-	console.log("API 3:", createdBy, timestamp, source, destination)
+	console.log("\n--------------------\nAPI 3:", createdBy, timestamp, source, destination)
 
 	const options = {
 		method: 'POST',
@@ -155,9 +150,9 @@ exports.createRide = (req, res, next) => {
 				.then(response => {
 					return res.status(201).send({})
 				})
-				.catch(err => res.status(500).send({}))
+				.catch(err => res.status(500).send(err))
 		})
-		.catch(err => res.status(500).send({}))
+		.catch(err => res.status(500).send(err))
 }
 
 
@@ -167,7 +162,7 @@ exports.listRides = (req, res, next) => {
 	let source = req.query.source
 	let destination = req.query.destination
 
-	console.log("API 4:", source, destination);
+	console.log("\n--------------------\nAPI 4:", source, destination);
 
 	if (
 		!source ||
@@ -226,7 +221,7 @@ exports.listRides = (req, res, next) => {
 					request(options)
 						.then(response => {
 							var newResponse = new Array()
-							if(response.length==0) return res.status(204).send([])
+							if (response.length == 0) return res.status(204).send([])
 							response.forEach(element => {
 								newResponse.push({
 									"rideId": element.rideid,
@@ -236,11 +231,11 @@ exports.listRides = (req, res, next) => {
 							});
 							return res.status(200).send(newResponse)
 						})
-						.catch(err => res.status(500).send({}))
+						.catch(err => res.status(500).send(err))
 				})
-				.catch(err => res.status(500).send({}))
+				.catch(err => res.status(500).send(err))
 		})
-		.catch(err => res.status(500).send({}))
+		.catch(err => res.status(500).send(err))
 }
 
 
@@ -249,7 +244,7 @@ exports.listRides = (req, res, next) => {
 exports.getRide = (req, res, next) => {
 	let rideId = req.params.rideId
 
-	console.log("API 5:", rideId)
+	console.log("\n--------------------\nAPI 5:", rideId)
 
 	if (rideId.replace(/\s/g, '') === "") return res.status(204).send()
 
@@ -295,10 +290,11 @@ exports.getRide = (req, res, next) => {
 						"destination": response[0].destination
 					})
 				})
-				.catch(err => res.status(500).send({}))
+				.catch(err => res.status(500).send(err))
 		})
-		.catch(err => res.status(500).send({}))
+		.catch(err => res.status(500).send(err))
 }
+
 
 // 6. Join an existing ride
 
@@ -331,8 +327,9 @@ exports.joinRide = (req, res, next) => {
 			return res.status(400);
 		});
 
-	
+
 }
+
 
 // 7. Delete a ride
 
@@ -355,8 +352,7 @@ exports.deleteRide = (req, res, next) => {
 	}
 	request(options)
 		.then((response) => {
-			if(response.length==0)
-			{
+			if (response.length == 0) {
 				console.error("Ride Not Found..")
 				return res.status(400).send({})
 			}
@@ -375,6 +371,7 @@ exports.deleteRide = (req, res, next) => {
 		})
 		.catch(err => res.status(500).send(err))
 }
+
 
 // 8. Write data to the DB
 
