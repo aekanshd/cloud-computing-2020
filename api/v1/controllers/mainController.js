@@ -80,6 +80,33 @@ exports.deleteUser = (req, res, next) => {
 
 }
 
+//	10. List All Users
+
+exports.listUsers = (req,res,next) => {
+	const options = {
+		method: 'POST',
+		uri: 'http://localhost/api/v1/db/read',
+		body: {},
+		json: true
+	}
+	options['body'] = {
+		table: 'users',
+		where: '1'
+	}
+	request(options)
+		.then(response => {
+			if (response.length === 0) return res.status(204).send([])
+			var newResponse = new Array()
+			response.forEach(element => {
+				newResponse.push(element.username)
+			});
+			return res.status(200).send(newResponse)
+
+	})
+	.catch(err => res.status(500).send({}))
+
+}
+
 
 // 3. Create a new ride
 
@@ -439,4 +466,23 @@ exports.readDb = (req, res, next) => {
 		console.log("DB [R]: ", results);
 		res.send(results);
 	});
+}
+
+// 10. Clear DB
+exports.clearDb = (req, res, next) => {
+	console.log("DB clear...")
+	var tables = ['users','rides','transactions']
+	
+	tables.forEach(table => {
+		query = `DELETE FROM `+table;
+		sql.query(query, (err, results, fields) => {
+			if (err) {
+				console.error(err.message)
+				return res.status(400).send(err)
+			}
+			console.log("DB [C]: ", results);
+			
+		})
+	});
+	res.status(200).send();
 }

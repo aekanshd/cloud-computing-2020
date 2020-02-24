@@ -17,4 +17,6 @@ module.exports = (router) => {
 	router.post('/db/write', mainController.writeDb) // 8
 	router.post('/db/read', mainController.readDb) // 9
 	router.delete('/db/write', mainController.writeDb) //10
+	router.get('/users', mainController.listUsers) //11
+	router.post('/db/clear', mainController.clearDb) // 12
 }

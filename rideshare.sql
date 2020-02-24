@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.7.9
+-- version 4.8.3
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3306
--- Generation Time: Feb 03, 2020 at 02:27 PM
--- Server version: 5.7.21
--- PHP Version: 7.2.4
+-- Host: 127.0.0.1
+-- Generation Time: Feb 24, 2020 at 03:14 PM
+-- Server version: 10.1.36-MariaDB
+-- PHP Version: 7.2.10
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -21,8 +21,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `rideshare`
 --
-CREATE DATABASE IF NOT EXISTS `rideshare` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
-USE `rideshare`;
 
 -- --------------------------------------------------------
 
@@ -30,18 +28,11 @@ USE `rideshare`;
 -- Table structure for table `locations`
 --
 
-DROP TABLE IF EXISTS `locations`;
-CREATE TABLE IF NOT EXISTS `locations` (
+CREATE TABLE `locations` (
   `locationid` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  PRIMARY KEY (`locationid`)
+  `name` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
---
--- Truncate table before insert `locations`
---
-
-TRUNCATE TABLE `locations`;
 --
 -- Dumping data for table `locations`
 --
@@ -252,80 +243,108 @@ INSERT INTO `locations` (`locationid`, `name`) VALUES
 -- Table structure for table `rides`
 --
 
-DROP TABLE IF EXISTS `rides`;
-CREATE TABLE IF NOT EXISTS `rides` (
-  `rideid` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `rides` (
+  `rideid` int(11) NOT NULL,
   `ownerid` int(11) NOT NULL,
   `source` int(11) NOT NULL,
   `destination` int(11) NOT NULL,
-  `time` varchar(20) NOT NULL,
-  PRIMARY KEY (`rideid`),
-  KEY `rides_ibfk_1` (`ownerid`),
-  KEY `source` (`source`),
-  KEY `destination` (`destination`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+  `time` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
---
--- Truncate table before insert `rides`
---
-
-TRUNCATE TABLE `rides`;
---
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `transactions`
 --
 
-DROP TABLE IF EXISTS `transactions`;
-CREATE TABLE IF NOT EXISTS `transactions` (
+CREATE TABLE `transactions` (
   `rideid` int(11) NOT NULL,
   `userid` int(11) NOT NULL,
-  `time` varchar(20) NOT NULL,
-  UNIQUE KEY `rideid` (`rideid`,`userid`),
-  KEY `userid` (`userid`)
+  `time` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
---
--- Truncate table before insert `transactions`
---
+-- --------------------------------------------------------
 
-TRUNCATE TABLE `transactions`;
 --
--- Dumping data for table `transactions`
---
-
 -- Table structure for table `users`
 --
 
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
-  `userid` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `users` (
+  `userid` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `password` text NOT NULL,
-  PRIMARY KEY (`userid`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+  `password` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
--- Truncate table before insert `users`
+-- Dumping data for table `users`
 --
 
-TRUNCATE TABLE `users`;
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `locations`
+--
+ALTER TABLE `locations`
+  ADD PRIMARY KEY (`locationid`);
+
+--
+-- Indexes for table `rides`
+--
+ALTER TABLE `rides`
+  ADD PRIMARY KEY (`rideid`),
+  ADD KEY `rides_ibfk_1` (`ownerid`),
+  ADD KEY `source` (`source`),
+  ADD KEY `destination` (`destination`);
+
+--
+-- Indexes for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD UNIQUE KEY `rideid` (`rideid`,`userid`),
+  ADD KEY `userid` (`userid`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`userid`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `rides`
+--
+ALTER TABLE `rides`
+  MODIFY `rideid` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `userid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- Constraints for dumped tables
+--
+
 --
 -- Constraints for table `rides`
 --
 ALTER TABLE `rides`
-  ADD CONSTRAINT `rides_ibfk_1` FOREIGN KEY (`ownerid`) REFERENCES `users` (`userid`),
-  ADD CONSTRAINT `rides_ibfk_2` FOREIGN KEY (`source`) REFERENCES `locations` (`locationid`),
-  ADD CONSTRAINT `rides_ibfk_3` FOREIGN KEY (`destination`) REFERENCES `locations` (`locationid`);
+  ADD CONSTRAINT `rides_ibfk_1` FOREIGN KEY (`ownerid`) REFERENCES `users` (`userid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `rides_ibfk_2` FOREIGN KEY (`source`) REFERENCES `locations` (`locationid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `rides_ibfk_3` FOREIGN KEY (`destination`) REFERENCES `locations` (`locationid`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `transactions`
 --
 ALTER TABLE `transactions`
-  ADD CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`userid`),
-  ADD CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`userid`) REFERENCES `users` (`userid`),
-  ADD CONSTRAINT `transactions_ibfk_3` FOREIGN KEY (`rideid`) REFERENCES `rides` (`rideid`);
+  ADD CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`userid`) REFERENCES `users` (`userid`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `transactions_ibfk_3` FOREIGN KEY (`rideid`) REFERENCES `rides` (`rideid`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
