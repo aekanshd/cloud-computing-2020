@@ -9,14 +9,9 @@ module.exports = (router) => {
 	router.get('/', mainController.home)
 	router.put('/users', mainController.createUser)  //1
 	router.delete('/users/:username', mainController.deleteUser)  //2
-	router.post('/rides', mainController.createRide) // 3
-	router.get('/rides', mainController.listRides) // 4
-	router.get('/rides/:rideId', mainController.getRide) // 5
-	router.post('/rides/:rideId', mainController.joinRide) // 6
-	router.delete('/rides/:rideId', mainController.deleteRide) // 7
+	router.get('/users', mainController.listUsers) //11
 	router.post('/db/write', mainController.writeDb) // 8
 	router.post('/db/read', mainController.readDb) // 9
 	router.delete('/db/write', mainController.writeDb) //10
-	router.get('/users', mainController.listUsers) //11
 	router.post('/db/clear', mainController.clearDb) // 12
 }
