@@ -1,13 +1,15 @@
+//Rideshare Users
 const path = require('path')
 const fs = require('fs')
+const dbConfig = require("../config/db.config.js");
 const mongoClient = require("mongodb").MongoClient;
 const url = require('../models/db.js').url
 const request = require('request-promise')
-
+uri_base = "http://localhost:8000/api/v1/"
 
 
 exports.home = (req, res, next) => {
-	res.send("Hello Team 2020!")
+	res.send("Welcome!")
 }
 
 // 1. Creates a User
@@ -16,11 +18,11 @@ exports.createUser = (req, res, next) => {
 	
 	let username = req.body.username
 	let password = req.body.password.toUpperCase()
-	console.log("Request for create user : ",usename)
+	console.log("Request for create user : ",username)
 	let hexadecimals = /^[0-9A-F]{40}$/
 
 	let db_req = { "table": "users", "where": {"username": username}};
-	const options = { method: 'POST', uri: '/api/v1/db/read', body: db_req, json: true }
+	const options = { method: 'POST', uri: uri_base+'db/read', body: db_req, json: true }
 	request(options)
 		.then((results) => {
 			//IF the user is not present, add the user to the database
@@ -28,8 +30,8 @@ exports.createUser = (req, res, next) => {
 				if (hexadecimals.test(password)) {
 
 					let db_req = { "table": "users", "username": username, "password": password };
-					const options = { method: 'POST', uri: '/api/v1/db/write', body: db_req, json: true }
-					console.log("Creating new user : ",usename)
+					const options = { method: 'POST', uri: uri_base+'db/write', body: db_req, json: true }
+					console.log("Creating new user : ",username)
 					request(options)
 						.then((reponse) => {
 
@@ -49,7 +51,11 @@ exports.createUser = (req, res, next) => {
 				return res.status(409).send({});
 			}
 		})
-		.catch(err => res.status(500).send(err))
+		.catch((err) => {
+		 	console.log("Error : ",err)
+		 	res.status(500).send(err)
+		 	
+		 })
 }
 
 
@@ -58,7 +64,7 @@ exports.createUser = (req, res, next) => {
 exports.deleteUser = (req, res, next) => {
 	let username = req.params.username
 	let db_req = { "table": "users", "where": {"username":username} };
-	const options = { method: 'POST', uri: 'http://localhost:8080/api/v1/db/read', body: db_req, json: true }
+	const options = { method: 'POST', uri: uri_base+'db/read', body: db_req, json: true }
 	request(options)
 		.then((result) => {
 			// IF the user is not present, return an error message
@@ -67,10 +73,10 @@ exports.deleteUser = (req, res, next) => {
 				return res.status(400).send({})
 			}
 			console.log("User Exists");
-			user_id = result[0]._id
+			//user_id = result[0]._id
 			//if the user is present, delete from the database
-			let db_req = { "table": "users", "where": {"_id": user_id}};
-			const options = { method: 'DELETE', uri: 'http://localhost:8080/api/v1/db/write', body: db_req, json: true }
+			let db_req = { "table": "users", "where": {"username":username}};
+			const options = { method: 'DELETE', uri: uri_base+'db/write', body: db_req, json: true }
 			request(options)
 				.then(response => {
 					return res.status(200).send({})
@@ -85,7 +91,7 @@ exports.deleteUser = (req, res, next) => {
 exports.listUsers = (req,res,next) => {
 	const options = {
 		method: 'POST',
-		uri: 'http://localhost:8080/api/v1/db/read',
+		uri: uri_base+'db/read',
 		body: {},
 		json: true
 	}
@@ -103,7 +109,7 @@ exports.listUsers = (req,res,next) => {
 			return res.status(200).send(newResponse)
 
 	})
-	.catch(err => res.status(500).send({}))
+	.catch(err => res.status(500).send(err))
 
 }
 
@@ -112,11 +118,12 @@ exports.listUsers = (req,res,next) => {
 // 8. Write data to the DB
 
 exports.writeDb = (req, res, next) => {
-
+	console.log("DB api");
 	if (req.method === 'POST') {
 		console.log("Recieved DB write POST request..");
 		if (req.body.table === 'users') {
 			mongoClient.connect(url, function(err, db) {  
+				dbo=db.db(dbConfig.DB)
 				if(err){
 					console.error(err.message)
 					return res.status(400).send(err)
@@ -126,7 +133,7 @@ exports.writeDb = (req, res, next) => {
 								"username": req.body.username,
 								"password": req.body.password 
 							}; 
-				db.collection(req.body.table).insertOne(user, function(err, res) {  
+				dbo.collection(req.body.table).insertOne(user, function(err, db_out) {  
 					if(err){
 						console.error(err.message)
 						return res.status(400).send(err)
@@ -142,6 +149,7 @@ exports.writeDb = (req, res, next) => {
 
 			if(req.body.update){
 				mongoClient.connect(url, function(err, db) {  
+					dbo=db.db(dbConfig.DB)
 					if(err){
 						console.error(err.message)
 						return res.status(400).send(err)
@@ -149,7 +157,7 @@ exports.writeDb = (req, res, next) => {
 					console.log("Connected to DB..");
 					var query = { "rideid": req.body.rideid };
 					var newuser = { $push: {"users": req.body.username } };
-					db.collection(req.body.table).updateOne(query, newuser, function(err, res) {  
+					dbo.collection(req.body.table).updateOne(query, newuser, function(err, db_out) {  
 						if(err){
 							console.error(err.message)
 							return res.status(400).send(err)
@@ -162,6 +170,7 @@ exports.writeDb = (req, res, next) => {
 			}
 			else{
 				mongoClient.connect(url, function(err, db) {  
+					dbo=db.db(dbConfig.DB)
 					if(err){
 						console.error(err.message)
 						return res.status(400).send(err)
@@ -173,7 +182,7 @@ exports.writeDb = (req, res, next) => {
 									"destination":req.body.destination,
 									"timestamp":req.body.timestamp
 								}; 
-					db.collection(req.body.table).insertOne(ride, function(err, res) {  
+					dbo.collection(req.body.table).insertOne(ride, function(err, db_out) {  
 						if(err){
 							console.error(err.message)
 							return res.status(400).send(err)
@@ -194,19 +203,21 @@ exports.writeDb = (req, res, next) => {
 	else if (req.method === 'DELETE') {
 		console.log("Recieved DB write DELETE request..");
 		
-		MongoClient.connect(url, function(err, db) {  
+		mongoClient.connect(url, function(err, db) {  
+			dbo=db.db(dbConfig.DB)
 			if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
 			}  
 			var qry = req.body.where;  
-			db.collection(req.body.table).deleteOne(qry, function(err, obj) {  
+			dbo.collection(req.body.table).deleteOne(qry, function(err, obj) {  
 				if(err){
 					console.error(err.message)
 					return res.status(400).send(err)
 				} 
 				console.log(obj.result.n + " record(s) deleted");  
-				db.close();  
+				db.close(); 
+				return res.status(200).send(); 
 			});  
 		});
 		
@@ -217,15 +228,20 @@ exports.writeDb = (req, res, next) => {
 // 9. Read data from the DB
 
 exports.readDb = (req, res, next) => {
-	MongoClient.connect(url, function(err, db) {  
-		if (err) throw err;  
+	console.log("Reading Database..")
+	mongoClient.connect(url, function(err, db) {  
+		if(err){
+				console.error(err.message)
+				return res.status(400).send(err)
+			}  
+		dbo=db.db(dbConfig.DB)
 		var qry = req.body.where;   
-		db.collection(req.body.table).find(qry).toArray(function(err, db_out) {   
+		dbo.collection(req.body.table).find(qry).toArray(function(err, db_out) {   
 			if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
 			} 
-			console.log("Read Successful...");  
+			console.log("Read Successful...\n",db_out);  
 			db.close();  
 			return res.status(200).send(db_out);
 		});  
@@ -238,18 +254,19 @@ exports.clearDb = (req, res, next) => {
 	var tables = ['users']
 	
 	tables.forEach(table => {
-		MongoClient.connect(url, function(err, db) {  
+		mongoClient.connect(url, function(err, db) {  
 			if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
 			}  
+			dbo=db.db(dbConfig.DB)
 			var qry = {};  
-			db.collection(table).deleteMany(qry, function(err, obj) {  
+			dbo.collection(table).deleteMany(qry, function(err, db_out) {  
 				if(err){
 					console.error(err.message)
 					return res.status(400).send(err)
 				} 
-				console.log(obj.result.n + " record(s) deleted");  
+				console.log(db_out.result.n + " record(s) deleted");  
 				db.close();  
 			});  
 		});

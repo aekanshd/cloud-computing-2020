@@ -1,18 +1,25 @@
 version: '3'
 
 services:
-  web:
+  web_users:
     build: .
     command: npm start
     restart: always
+    networks:
+      - rideshare_rides_rideshare_network
     ports:
-      - "8080:8080"
+      - "8080:8000"
     links:
-      - mongodb
+      - mongodb_users
     depends_on:
-      - mongodb
-  mongodb:
+      - mongodb_users
+  mongodb_users:
     image: mongo
-    ports: 
+    ports:
       - "27019:27017"
+    networks:
+      - rideshare_rides_rideshare_network
+networks:
+  rideshare_rides_rideshare_network:
+    external: true
 

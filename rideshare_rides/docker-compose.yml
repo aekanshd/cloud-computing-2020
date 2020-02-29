@@ -1,18 +1,25 @@
 version: '3'
 
 services:
-  web:
+  web_rides:
     build: .
     command: npm start
     restart: always
     ports:
       - "8000:8000"
     links:
-      - mongodb
+      - mongodb_rides
     depends_on:
-      - mongodb
-  mongodb:
+      - mongodb_rides
+    networks: 
+      - rideshare_network
+  mongodb_rides:
     image: mongo
     ports: 
       - "27018:27017"
+    networks:
+      - rideshare_network
+networks:
+  rideshare_network:
+    driver: bridge
 
