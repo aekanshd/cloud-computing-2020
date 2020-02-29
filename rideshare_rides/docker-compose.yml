@@ -13,12 +13,16 @@ services:
       - mongodb_rides
     networks: 
       - rideshare_network
+    environment:
+      - TEAM_NAME=CC_706_276_1808_652
   mongodb_rides:
     image: mongo
     ports: 
       - "27018:27017"
     networks:
       - rideshare_network
+    environment:
+      - TEAM_NAME=CC_706_276_1808_652
 networks:
   rideshare_network:
     driver: bridge

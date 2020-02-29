@@ -13,12 +13,16 @@ services:
       - mongodb_users
     depends_on:
       - mongodb_users
+    environment:
+      - TEAM_NAME=CC_706_276_1808_652
   mongodb_users:
     image: mongo
     ports:
       - "27019:27017"
     networks:
       - rideshare_rides_rideshare_network
+    environment:
+      - TEAM_NAME=CC_706_276_1808_652
 networks:
   rideshare_rides_rideshare_network:
     external: true
