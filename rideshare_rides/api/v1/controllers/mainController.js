@@ -162,44 +162,28 @@ exports.getRide = (req, res, next) => {
 		body: {},
 		json: true
 	}
-	console.log(rideId)
+	
 	options["body"] = {
 		table: "rides",
-		where: {"_id":new objectId(rideId)}
+		where: {"_id":rideId}
 	}
-
+	console.log(options.body.where)
 	request(options)
 		.then(response => {
 			if (response.length === 0) return res.status(404).send("404: Ride ID Not Found")
-
-			const options = {
-				method: "POST",
-				uri: uri_base+"db/read",
-				body: {},
-				json: true
-			}
-
-			options["body"] = {
-				table: rides,
-				where: {"_id":new objectId(rideId)}
-			}
-
-			request(options)
-				.then(nextResponse => {
-					console.log(nextResponse)
+					console.log("Rides Exists")
 					let users = new Array()
 					//nextResponse.forEach(element => { users.push(element.userid) })
-					users = nextResponse[0].users;
+					if(response[0].users) users = response[0].users;
 					return res.status(200).send({
 						"RideId": response[0]._id,
-						"Created_by": response[0].username,
+						"Created_by": response[0].owner,
 						"users": users,
-						"timestamp": response[0].time,
+						"timestamp": response[0].timestamp,
 						"source": response[0].source,
 						"destination": response[0].destination
 					})
-				})
-				.catch(err => res.status(500).send(err))
+				
 		})
 		.catch(err => res.status(500).send(err))
 }
@@ -226,7 +210,7 @@ exports.joinRide = (req, res, next) => {
 
 	options["body"] = {
 		table: "rides",
-		where: {"_id":new objectId(rideId)}
+		where: {"_id":rideId}
 	}
 	
 	request(options)
@@ -235,7 +219,7 @@ exports.joinRide = (req, res, next) => {
 
 			options["uri"] = uri_base + "db/write";
 			options["body"] = {}; // remove this if not necessary.
-			options["body"] = { update:1 ,table: "rides",username: username, "_id": new objectId(rideId)};
+			options["body"] = { update:1 ,table: "rides",username: username, "_id": rideId};
 			request(options)
 				.then(function (response) {
 					console.log("Join Ride Success...")
@@ -260,7 +244,7 @@ exports.deleteRide = (req, res, next) => {
 		return res.status(204);
 	}
 
-	let db_req = { table: "rides", where: {"_id":new objectId(rideId)} };
+	let db_req = { table: "rides", where: {"_id":rideId} };
 	const options = {
 		method: "POST",
 		uri: uri_base + "db/read",
@@ -274,7 +258,7 @@ exports.deleteRide = (req, res, next) => {
 				console.error("Ride Not Found..")
 				return res.status(400).send({})
 			}
-			let db_req = { table: "rides", where: {"_id":new objectId(rideId)}};
+			let db_req = { table: "rides", where: {"_id":rideId}};
 			const options = {
 				method: "DELETE",
 				uri: uri_base + "db/write",
@@ -330,7 +314,7 @@ exports.writeDb = (req, res, next) => {
 						return res.status(400).send(err)
 					}  
 					console.log("Connected to DB..");
-					var query = { "_id": req.body._id };
+					var query = { "_id": new objectId(req.body._id)};
 					var newuser = { $push: {"users": req.body.username } };
 					dbo.collection(req.body.table).updateOne(query, newuser, function(err, db_out) {  
 						if(err){
@@ -384,7 +368,10 @@ exports.writeDb = (req, res, next) => {
 				console.error(err.message)
 				return res.status(400).send(err)
 			}  
-			var qry = req.body.where;  
+			var qry = req.body.where; 
+			if(req.body.where._id){
+				qry = {"_id":new objectId(req.body.where._id)}
+			} 
 			dbo.collection(req.body.table).deleteOne(qry, function(err, obj) {  
 				if(err){
 					console.error(err.message)
@@ -410,9 +397,13 @@ exports.readDb = (req, res, next) => {
 				return res.status(400).send(err)
 			}  
 		dbo=db.db(dbConfig.DB)
-		var qry = req.body.where;
+		//var qry = req.body.where;
 		
-		console.log(qry);   
+		console.log(req.body.where);
+		var qry = req.body.where; 
+		if(req.body.where._id){
+			qry = {"_id":new objectId(req.body.where._id)}
+		}  
 		dbo.collection(req.body.table).find(qry).toArray(function(err, db_out) {   
 			if(err){
 				console.error(err.message)
