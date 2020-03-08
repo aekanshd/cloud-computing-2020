@@ -587,3 +587,29 @@ exports.getRequestsCount = (req,res,next) => {
 	});
 
 }
+
+//Get the total number of rides
+
+exports.count = (req, res, next) =>{
+	console.log("List the number of rides");
+	var tables = ["rides"];
+	var out = [];
+	mongoClient.connect(url, function(err, db) {  
+		if(err){
+				console.error(err.message)
+				return res.status(405).send(err)
+			}  
+		dbo=db.db(dbConfig.DB)
+		dbo.collection(table).find({"_id":{$ne:null}}).count(){
+			if(err){
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			db.close();
+			out.push(db_out);
+			return res.status(200).send(out);
+
+		};
+	});
+
+}
