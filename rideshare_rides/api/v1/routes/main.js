@@ -7,6 +7,7 @@ module.exports = (router) => {
 	// router.get(main+'/path/:param', utils.middleWare, main.finalController)
 	router.use('/rides*', mainController.requestsCountIncrement)
 	router.get('/_count',mainController.getRequestsCount)
+	router.delete('/_count',mainController.resetRequestsCount)
 	router.get('/', mainController.home)
 	router.post('/rides', mainController.createRide) // 3
 	router.get('/rides', mainController.listRides) // 4
