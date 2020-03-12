@@ -3,6 +3,7 @@ version: '3'
 services:
   web_users:
     build: .
+    image: users:latest
     command: npm start
     restart: always
     networks:
@@ -14,7 +15,7 @@ services:
     depends_on:
       - mongodb_users
     environment:
-      - TEAM_NAME=CC_706_276_1808_652
+      - TEAM_NAME=CC_0276_0652_0706_1808
   mongodb_users:
     image: mongo
     ports:
@@ -22,7 +23,7 @@ services:
     networks:
       - rideshare_rides_rideshare_network
     environment:
-      - TEAM_NAME=CC_706_276_1808_652
+      - TEAM_NAME=CC_0276_0652_0706_1808
 networks:
   rideshare_rides_rideshare_network:
     external: true

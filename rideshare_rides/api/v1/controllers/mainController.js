@@ -7,7 +7,7 @@ objectId = require('mongodb').ObjectID;
 const url = require("../models/db.js").url
 const request = require("request-promise")
 uri_base = "http://localhost:8000/api/v1/"
-user_service = "http://web_users:8000/"
+user_service = "http://rideshare-load-balancer-1262700400.us-east-1.elb.amazonaws.com/"
 
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
@@ -32,16 +32,16 @@ exports.createRide = (req, res, next) => {
 	console.log("Accessing User Container")
 	request(options)
 		.then(response => {
-			//if (response.length === 0) return res.status(404).send({})
+			if (response.length === 0) return res.status(404).send({})
 			var found = 0;
 			response.forEach(user => {
-				if(user===createdBy)				
+				if(user===createdBy)
 				{
 					found = 1;
 				}
 			})
 			if(found==0){
-				return res.status(404).send({})	
+				return res.status(404).send({})
 			}
 			const options = {
 				method: "POST",
@@ -215,16 +215,16 @@ exports.joinRide = (req, res, next) => {
 	console.log("Accessing User Container")
 	request(options)
 		.then(response => {
-			//if (response.length === 0) return res.status(404).send({})
+			if (response.length === 0) return res.status(404).send({})
 			var found = 0;
 			response.forEach(user => {
-				if(user===username)				
+				if(user===username)
 				{
 					found = 1;
 				}
 			})
 			if(found==0){
-				return res.status(404).send({})	
+				return res.status(404).send({})
 			}
 	
 		options = {
@@ -418,53 +418,75 @@ exports.writeDb = (req, res, next) => {
 
 exports.readDb = (req, res, next) => {
 	console.log("Reading Database..")
-	mongoClient.connect(url, function(err, db) {  
+	mongoClient.connect(url, function(err, db) {
 		if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
-			}  
+			}
 		dbo=db.db(dbConfig.DB)
 		//var qry = req.body.where;
-		
 		console.log(req.body.where);
-		var qry = req.body.where; 
+		var qry = req.body.where;
 		if(req.body.where._id){
 			qry = {"_id":new objectId(req.body.where._id)}
-		}  
-		dbo.collection(req.body.table).find(qry).toArray(function(err, db_out) {   
+		}
+		dbo.collection(req.body.table).find(qry).toArray(function(err, db_out) {
 			if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
-			} 
-			console.log("Read Successful...\n",db_out);  
-			db.close();  
+			}
+			console.log("Read Successful...\n",db_out);
+			db.close();
 			return res.status(200).send(db_out);
-		});  
+		});
 	});
 }
 
 // 10. Clear DB
-exports.clearDb = (req, res, next) => {
+ exports.clearDb = (req, res, next) => {
 	console.log("DB clear...")
 	var tables = ["rides"]
-	
 	tables.forEach(table => {
-		mongoClient.connect(url, function(err, db) {  
+		mongoClient.connect(url, function(err, db) {
 			if(err){
 				console.error(err.message)
 				return res.status(400).send(err)
-			}  
+			}
 			dbo=db.db(dbConfig.DB)
-			var qry = {};  
-			dbo.collection(table).deleteMany(qry, function(err, db_out) {  
+			var qry = {};
+			dbo.collection(table).deleteMany(qry, function(err, db_out) {
 				if(err){
 					console.error(err.message)
 					return res.status(400).send(err)
-				} 
-				console.log(db_out.result.n + " record(s) deleted");  
-				db.close();  
-			});  
+				}
+				console.log(db_out.result.n + " record(s) deleted");
+				db.close();
+			});
 		});
 	});
 	res.status(200).send();
-}
+ }
+
+//11 . Count number of rides
+exports.count = (req,res,next) => {
+	console.log("List Number of Rides");
+	var table = "rides";
+	mongoClient.connect(url,function(err,db) {
+		if(err) {
+			console.err(err.message);
+			return res.status(405).send(err)
+		}
+		dbo = db.db(dbConfig.DB);
+		dbo.collection(table).find().count((err,count) => {
+			if(err) {
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			db.close();
+			var out =[];
+			out.push(count);
+			return res.status(200).send(out);
+		})
+	});
+
+} 
