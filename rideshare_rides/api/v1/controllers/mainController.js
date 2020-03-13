@@ -563,6 +563,7 @@ exports.getRequestsCount = (req,res,next) => {
 				return res.status(405).send(err);
 			}
 			db.close();
+			console.log(count);
 			//next();
 			return res.status(200).send([count[0]["count"]]);
 		})
