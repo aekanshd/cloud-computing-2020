@@ -273,3 +273,83 @@ exports.clearDb = (req, res, next) => {
 	});
 	res.status(200).send();
 }
+
+// Increment Number of requests
+
+exports.requestsCountIncrement = (req,res,next) => {
+	console.log("Increment Count of requests..");
+	var table = "users_meta";
+	mongoClient.connect(url,function(err,db) {
+		if(err) {
+			console.err(err.message);
+			return res.status(405).send(err)
+		}
+		dbo = db.db(dbConfig.DB);
+		var qry = {"meta_name":"requests_counter"}
+		var update = {$inc: {"count":1}}
+		dbo.collection(table).updateOne(qry, update, (err,count) => {
+			if(err) {
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			db.close();
+			next();
+			//return res.status(200).send(out);
+		})
+	});
+
+}
+
+// Reset request counter
+
+exports.resetRequestsCount = (req,res,next) => {
+	console.log("Reset Count of requests..");
+	var table = "users_meta";
+	mongoClient.connect(url,function(err,db) {
+		if(err) {
+			console.err(err.message);
+			return res.status(405).send(err)
+		}
+		dbo = db.db(dbConfig.DB);
+		var qry = {"meta_name":"requests_counter"}
+		var update = {$set: {"count":0}}
+		dbo.collection(table).updateOne(qry, update, (err,count) => {
+			if(err) {
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			db.close();
+			next();
+			//return res.status(200).send(out);
+		})
+	});
+
+}
+
+
+
+// Return number of requests made
+exports.getRequestsCount = (req,res,next) => {
+	console.log("Return Count of requests..");
+	var table = "users_meta";
+	mongoClient.connect(url,function(err,db) {
+		if(err) {
+			console.err(err.message);
+			return res.status(405).send(err)
+		}
+		console.log("Creating DB object")
+		dbo = db.db(dbConfig.DB);
+		var qry = {"meta_name":"requests_counter"}
+		dbo.collection(table).find(qry).toArray((err,count) => {
+			if(err) {
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			console.log("Executed Query")
+			//console.log(count)
+			db.close();
+			return res.status(200).send([count[0].count]);
+		});
+	});
+
+}

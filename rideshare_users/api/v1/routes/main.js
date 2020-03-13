@@ -5,7 +5,9 @@ module.exports = (router) => {
 	// var main = "/main"
 
 	// router.get(main+'/path/:param', utils.middleWare, main.finalController)
-
+	router.use('/users*', mainController.requestsCountIncrement)
+	router.get('/_count',mainController.getRequestsCount)
+	router.delete('/_count',mainController.resetRequestsCount)
 	router.get('/', mainController.home)
 	router.put('/users', mainController.createUser)  //1
 	router.delete('/users/:username', mainController.deleteUser)  //2
