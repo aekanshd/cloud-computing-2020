@@ -3,28 +3,20 @@ version: '3'
 services:
   web_users:
     build: .
-    image: users:latest
     command: npm start
     restart: always
-    networks:
-      - rideshare_rides_rideshare_network
     ports:
-      - "8080:8000"
+      - "80:8000"
     links:
       - mongodb_users
     depends_on:
       - mongodb_users
     environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
+      - TEAM_NAME=CC_706_276_1808_652
   mongodb_users:
     image: mongo
     ports:
       - "27019:27017"
-    networks:
-      - rideshare_rides_rideshare_network
     environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
-networks:
-  rideshare_rides_rideshare_network:
-    external: true
+      - TEAM_NAME=CC_706_276_1808_652
 
