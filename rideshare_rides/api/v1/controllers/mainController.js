@@ -6,6 +6,7 @@ const mongoClient = require("mongodb").MongoClient;
 objectId = require('mongodb').ObjectID;
 const url = require("../models/db.js").url
 const request = require("request-promise")
+const getIP = require('external-ip')();
 uri_base = "http://localhost:8000/api/v1/"
 user_service = "http://rideshare-load-balancer-1262700400.us-east-1.elb.amazonaws.com/"
 
@@ -23,49 +24,57 @@ exports.createRide = (req, res, next) => {
 
 	console.log("\n--------------------\nAPI 3:", createdBy, timestamp, source, destination)
 
-	const options = {
-		method: "GET",
-		uri: user_service + "api/v1/users",
-		body: {},
-		json: true
-	}
-	console.log("Accessing User Container")
-	request(options)
-		.then(response => {
-			if (response.length === 0) return res.status(404).send({})
-			var found = 0;
-			response.forEach(user => {
-				if(user===createdBy)
-				{
-					found = 1;
-				}
-			})
-			if(found==0){
-				return res.status(404).send({})
-			}
-			const options = {
-				method: "POST",
-				uri: uri_base+"db/write",
-				body: {},
-				json: true
-			}
-
-			options["body"] = {
-				table: "rides",
-				owner: createdBy,
-				timestamp: timestamp,
-				source: parseInt(source),
-				destination: parseInt(destination),
-				users:new Array()
-			}
-
-			request(options)
-				.then(response => {
-					return res.status(201).send({})
+	getIP((err, ip) => {
+		if (err) {
+			console.log(err);
+			return res.status(500).send({});
+		}
+		const options = {
+			method: "GET",
+			uri: user_service + "api/v1/users",
+			headers: {'Origin':ip},
+			body: {},
+			json: true
+		}
+		console.log(options)
+		console.log("Accessing User Container")
+		request(options)
+			.then(response => {
+				if (response.length === 0) return res.status(404).send({})
+				var found = 0;
+				response.forEach(user => {
+					if(user===createdBy)
+					{
+						found = 1;
+					}
 				})
-				.catch(err => res.status(500).send(err))
-		})
-		.catch(err => res.status(500).send(err))
+				if(found==0){
+					return res.status(404).send({})
+				}
+				const options = {
+					method: "POST",
+					uri: uri_base+"db/write",
+					body: {},
+					json: true
+				}
+
+				options["body"] = {
+					table: "rides",
+					owner: createdBy,
+					timestamp: timestamp,
+					source: parseInt(source),
+					destination: parseInt(destination),
+					users:new Array()
+				}
+
+				request(options)
+					.then(response => {
+						return res.status(201).send({})
+					})
+					.catch(err => res.status(500).send(err))
+			})
+			.catch(err => res.status(500).send(err))
+	});
 }
 
 // 4. List all upcoming rides on a given route
@@ -206,57 +215,65 @@ exports.joinRide = (req, res, next) => {
 		return res.status(204);
 	}
 	
-	var options = {
-		method: "GET",
-		uri: user_service + "api/v1/users",
-		body: {},
-		json: true
-	}
-	console.log("Accessing User Container")
-	request(options)
-		.then(response => {
-			if (response.length === 0) return res.status(404).send({})
-			var found = 0;
-			response.forEach(user => {
-				if(user===username)
-				{
-					found = 1;
-				}
-			})
-			if(found==0){
-				return res.status(404).send({})
-			}
-	
-		options = {
-			method: "POST",
-			uri: uri_base + "db/read",
+	getIP((err, ip) => {
+		if (err) {
+			console.log(err);
+			return res.status(500).send({});
+		}
+		var options = {
+			method: "GET",
+			uri: user_service + "api/v1/users",
+			headers: {'Origin':ip},
 			body: {},
-			json: true // JSON stringifies the body automatically
+			json: true
 		}
-		options["body"] = {
-			table: "rides",
-			where: {"_id":rideId}
-		}
-		
+		console.log(options)
+		console.log("Accessing User Container")
 		request(options)
 			.then(response => {
-				if (response.length === 0) return res.status(404).send("404: Ride ID Not Found")
-
-				options["uri"] = uri_base + "db/write";
-				options["body"] = {}; // remove this if not necessary.
-				options["body"] = { update:1 ,table: "rides",username: username, "_id": rideId};
-				request(options)
-					.then(function (response) {
-						console.log("Join Ride Success...")
-						return res.status(200).send({});
-					})
-					.catch(function (err) {
-						return res.status(400);
-					});
+				if (response.length === 0) return res.status(404).send({})
+				var found = 0;
+				response.forEach(user => {
+					if(user===username)
+					{
+						found = 1;
+					}
 				})
+				if(found==0){
+					return res.status(404).send({})
+				}
+		
+			options = {
+				method: "POST",
+				uri: uri_base + "db/read",
+				body: {},
+				json: true // JSON stringifies the body automatically
+			}
+			options["body"] = {
+				table: "rides",
+				where: {"_id":rideId}
+			}
+			
+			request(options)
+				.then(response => {
+					if (response.length === 0) return res.status(404).send("404: Ride ID Not Found")
+
+					options["uri"] = uri_base + "db/write";
+					options["body"] = {}; // remove this if not necessary.
+					options["body"] = { update:1 ,table: "rides",username: username, "_id": rideId};
+					request(options)
+						.then(function (response) {
+							console.log("Join Ride Success...")
+							return res.status(200).send({});
+						})
+						.catch(function (err) {
+							return res.status(400);
+						});
+					})
+			.catch(err => res.status(500).send(err))
+		})
 		.catch(err => res.status(500).send(err))
-	})
-	.catch(err => res.status(500).send(err))
+	});
 }
 
 
