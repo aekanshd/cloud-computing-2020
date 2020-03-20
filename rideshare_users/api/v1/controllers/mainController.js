@@ -319,8 +319,7 @@ exports.resetRequestsCount = (req,res,next) => {
 				return res.status(405).send(err);
 			}
 			db.close();
-			next();
-			//return res.status(200).send(out);
+			return res.status(200).send(out);
 		})
 	});
 

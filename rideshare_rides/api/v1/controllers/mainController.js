@@ -145,9 +145,8 @@ exports.listRides = (req, res, next) => {
 							if (response.length == 0) return res.status(204).send([])
 							response.forEach(element => {
 								newResponse.push({
-									"_id": element._id,
-									"Created_by": element.owner,
-									"users":element.users,
+									"rideId": element._id,
+									"username": element.owner,
 									"timestamp": element.timestamp
 								})
 							});
@@ -190,10 +189,10 @@ exports.getRide = (req, res, next) => {
 					//nextResponse.forEach(element => { users.push(element.userid) })
 					if(response[0].users) users = response[0].users;
 					return res.status(200).send({
-						"RideId": response[0]._id,
+						"rideId": response[0]._id,
 						"Created_by": response[0].owner,
 						"users": users,
-						"timestamp": response[0].timestamp,
+						"Timestamp": response[0].timestamp,
 						"source": response[0].source,
 						"destination": response[0].destination
 					})
@@ -554,8 +553,8 @@ exports.resetRequestsCount = (req,res,next) => {
 				return res.status(405).send(err);
 			}
 			db.close();
-			next();
-			//return res.status(200).send(out);
+			
+			return res.status(200).send();
 		})
 	});
 
