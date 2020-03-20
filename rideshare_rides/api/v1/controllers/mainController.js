@@ -592,7 +592,7 @@ exports.getRequestsCount = (req,res,next) => {
 
 exports.count = (req, res, next) =>{
 	console.log("List the number of rides");
-	var tables = ["rides"];
+	var table = "rides";
 	var out = [];
 	mongoClient.connect(url, function(err, db) {  
 		if(err){
@@ -600,16 +600,15 @@ exports.count = (req, res, next) =>{
 				return res.status(405).send(err)
 			}  
 		dbo=db.db(dbConfig.DB)
-		dbo.collection(table).find({"_id":{$ne:null}}).count(){
+		dbo.collection(table).find({"_id":{$ne:null}}).count((err,count) => {
 			if(err){
 				console.error(err.message);
 				return res.status(405).send(err);
 			}
 			db.close();
-			out.push(db_out);
+			out.push(count);
 			return res.status(200).send(out);
 
-		};
+		});
 	});
-
 }
