@@ -5,12 +5,13 @@ const sql = require('../models/db.js')
 const request = require('request-promise')
 let query = ''
 
+rabbitServer = 'amqp://localhost'
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
 exports.sendtoMaster = (req, res, next)=>{
 
-	amqp.connect('amqp://localhost', function(error0, connection) {
+	amqp.connect(rabbitServer, function(error0, connection) {
   		if (error0) {
     		throw error0;
   		}
@@ -34,7 +35,7 @@ exports.sendtoMaster = (req, res, next)=>{
 
 exports.sendtoSlave = (req, res, next)=>{
 
-	amqp.connect('amqp://localhost', function(error0, connection) {
+	amqp.connect(rabbitServer, function(error0, connection) {
   		if (error0) {
     		throw error0;
   		}

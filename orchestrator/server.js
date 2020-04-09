@@ -29,7 +29,7 @@ app.get('/', function (req, res) {
 }); 
 
 // API routes
-app.use('/api', require('./api/routes/index'));
+app.use('/api', require('./routes/index'));
 
 /*---------------
   Server startup
