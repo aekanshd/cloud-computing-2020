@@ -5,13 +5,23 @@ const sql = require('../models/db.js')
 const request = require('request-promise')
 let query = ''
 
-rabbitServer = 'amqp://rabbitmq:15672'
+rabbit = {
+	hostname:"amqp://localhost/",
+	virtualHost: "rideshare",
+	user: "ravi",
+	password: "ravi"
+}
+const rabbitServer = rabbit.hostname+rabbit.virtualHost
+const opt = { 
+	credentials: require('amqplib').credentials.plain(rabbit.user,rabbit.password)
+}
+
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
-sendtoMaster = (req, res, next)=>{
+exports.sendtoMaster = (req, res, next)=>{
 
-	amqp.connect(rabbitServer, function(error0, connection) {
+	amqp.connect( rabbitServer, opt,function(error0, connection) {
   		if (error0) {
     		throw error0;
   		}
@@ -19,12 +29,12 @@ sendtoMaster = (req, res, next)=>{
   		if(error1){
   			throw error1;
   		}
-  		var queue = 'master';
-
+  		var queue = 'write';
+  		
   		channel.assertQueue(queue, {
   			durable: false
   		});
-  		channel.sendToQueue(queue, Buffer.from(req));
+  		channel.sendToQueue(queue, Buffer.from(JSON.stringify(req)));
 
   	});
     setTimeout(function() {
@@ -33,9 +43,9 @@ sendtoMaster = (req, res, next)=>{
    }, 500);
 });
 
-sendtoSlave = (req, res, next)=>{
+exports.sendtoSlave = (req, res, next)=>{
 
-	amqp.connect(rabbitServer, function(error0, connection) {
+	amqp.connect(rabbitServer, opt,function(error0, connection) {
   		if (error0) {
     		throw error0;
   		}
@@ -43,12 +53,12 @@ sendtoSlave = (req, res, next)=>{
   		if(error1){
   			throw error1;
   		}
-  		var queue = 'slave';
+  		var queue = 'read';
   		
   		channel.assertQueue(queue, {
   			durable: false
   		});
-  		channel.sendToQueue(queue, Buffer.from(req));
+  		channel.sendToQueue(queue, Buffer.from(JSON.stringify(req)));
 
   	});
     setTimeout(function() {

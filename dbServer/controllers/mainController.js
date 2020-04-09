@@ -4,7 +4,17 @@ const fs = require('fs')
 const sql = require('../models/db.js')
 const request = require('request-promise')
 let query = ''
-amqp.connect('amqp://localhost', function(error0, connection) {
+rabbit = {
+	hostname:"amqp://localhost/",
+	virtualHost: "rideshare",
+	user: "ravi",
+	password: "ravi"
+}
+const opt = { 
+	credentials: require('amqplib').credentials.plain(rabbit.user,rabbit.password)
+}
+const rabbitServer = rabbit.hostname+rabbit.virtualHost
+amqp.connect(rabbitServer, opt,function(error0, connection) {
   if (error0) {
     throw error0;
   }
@@ -24,8 +34,8 @@ amqp.connect('amqp://localhost', function(error0, connection) {
 		mongoClient.connect(url, function(err, db) {
 			if(err){
 					console.error(err.message)
-
-					amqp.connect('amqp://localhost', function(error0, connection) {
+			}
+					amqp.connect(rabbitServer, function(error0, connection) {
   					if (error0) {
     					throw error0;
   					}
@@ -46,7 +56,7 @@ amqp.connect('amqp://localhost', function(error0, connection) {
      			  process.exit(0);
    				}, 500);
 			}
-			dbo=db.db(dbConfig.DB)
+			dbo =db.db(dbConfig.DB)
 			//var qry = req.body.where;
 			console.log(req.body.where);
 			var qry = req.body.where;
@@ -63,7 +73,7 @@ amqp.connect('amqp://localhost', function(error0, connection) {
 
 
 
-				amqp.connect('amqp://localhost', function(error0, connection) {
+				amqp.connect(rabbitServer, function(error0, connection) {
   				if (error0) {
     				throw error0;
   				}
@@ -92,6 +102,9 @@ amqp.connect('amqp://localhost', function(error0, connection) {
 
        	}, {
             noAck: true
-        });
-  });
-});
+		
+		}
+		);
+		});
+	})
+})
