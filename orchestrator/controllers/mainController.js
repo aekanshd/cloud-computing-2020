@@ -5,11 +5,11 @@ const sql = require('../models/db.js')
 const request = require('request-promise')
 let query = ''
 
-rabbitServer = 'amqp://localhost'
+rabbitServer = 'amqp://rabbitmq:15672'
 exports.home = (req, res, next) => {
 	res.send("Hello Team 2020!")
 }
-exports.sendtoMaster = (req, res, next)=>{
+sendtoMaster = (req, res, next)=>{
 
 	amqp.connect(rabbitServer, function(error0, connection) {
   		if (error0) {
@@ -20,7 +20,7 @@ exports.sendtoMaster = (req, res, next)=>{
   			throw error1;
   		}
   		var queue = 'master';
-  		
+
   		channel.assertQueue(queue, {
   			durable: false
   		});
@@ -33,7 +33,7 @@ exports.sendtoMaster = (req, res, next)=>{
    }, 500);
 });
 
-exports.sendtoSlave = (req, res, next)=>{
+sendtoSlave = (req, res, next)=>{
 
 	amqp.connect(rabbitServer, function(error0, connection) {
   		if (error0) {

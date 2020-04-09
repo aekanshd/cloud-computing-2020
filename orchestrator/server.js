@@ -24,12 +24,12 @@ app.use(cookieParser());
 app.get('/', function (req, res) {
 	var api_routes = "";
 	api_routes += "GET /" + "<br>";
-	api_routes += "GET /api" + "<br>";
+	api_routes += "GET /api/v1/db/" + "<br>";
 	res.send('Available APIs:<br><br>' + api_routes);
 }); 
 
 // API routes
-app.use('/api', require('./routes/index'));
+app.use('/api/v1/db/', require('./routes/index'));
 
 /*---------------
   Server startup
