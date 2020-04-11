@@ -25,13 +25,23 @@ const role = process.env.ROLE
 
 if (role == 'master') {
 	console.log("Master")
-	master()
+	master((err,res)=>{
+		if (err) {
+			throw error
+		}
+		console.log(res)
+	})
 } else if (role == 'slave') {
 	console.log("Slave")
-	slave()
+	slave((err,res)=>{
+		if (err) {
+			throw error
+		}
+		console.log(res)
+	})
 }  
 
-slave = () => {
+slave = (callback) => {
 	amqp.connect(rabbitServer, opt,function(error0, connection) {
 		if (error0) {
 			return callback(error0)
@@ -58,7 +68,7 @@ slave = () => {
 	})
 }
 
-consumeReadQueue = (channel,queue) => {
+consumeReadQueue = (channel,queue,callback) => {
 	channel.assertQueue(queue, {
 		durable: false
 	});
@@ -85,7 +95,7 @@ consumeReadQueue = (channel,queue) => {
 	})
 }
 
-syncSlave = (channel,exchange) => {
+syncSlave = (channel,exchange,callback) => {
 	channel.assertQueue('', {
 		exclusive: true
 	  	}, function(err, q) {
@@ -113,7 +123,7 @@ syncSlave = (channel,exchange) => {
 	})
 }
 
-master = () => {
+master = (callback) => {
 	amqp.connect(rabbitServer, opt,function(error0, connection) {
 		if (error0) {
 			console.log(error0)
@@ -168,7 +178,7 @@ master = () => {
 }
 
 
-readDb = (req) => {
+readDb = (req,callback) => {
 	console.log("Reading Database..")
 	mongoClient.connect(url, (err, db) => {
 		if(err){
@@ -193,7 +203,7 @@ readDb = (req) => {
 	});
 }
 
-writeDb = (req) => {
+writeDb = (req , callback) => {
 	console.log("DB api");
 	if (req.method === "POST") {
 		console.log("Recieved DB write POST request..");
@@ -300,13 +310,4 @@ writeDb = (req) => {
 		});
 		
 	}
-}
-
-function callback(err, data) {
-	if(err) {
-	  console.log(err);
-	  return;
-	}
-	console.log(data);
-	return
 }

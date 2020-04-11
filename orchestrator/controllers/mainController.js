@@ -42,7 +42,7 @@ exports.writeDb = (req, res, next) => {
 }
 
 
-exports.readDb = (req) => {
+exports.readDb = (req, res, next) => {
 	console.log("DB Write");
 	if (req.method === "POST") {
 		req.queue = "read"
@@ -92,15 +92,7 @@ exports.clearDb = (req, res, next) => {
 
 //--------------------------------------------
 
-function callback(err, data) {
-	if(err) {
-	  console.log(err);
-	  return;
-	}
-	console.log(data);
-}
-
-sendData = (req)=>{
+sendData = (req,callback)=>{
 	amqp.connect( rabbitServer, opt,function(error0, connection) {
   		if (error0) {
 			console.error(error0) 
@@ -128,7 +120,7 @@ sendData = (req)=>{
 	});
 }
 
-readData = (req)=>{
+readData = (req,callback)=>{
 	amqp.connect( rabbitServer, opt,function(error0, connection) {
   		if (error0) {
 			console.error(error0) 
