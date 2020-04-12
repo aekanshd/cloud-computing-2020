@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    image: rideshare:latest
+#    command: npm start
+    restart: always
+    ports:
+      - "80:8000"
+    depends_on:
+      - mongodb
+    networks: 
+      - rideshare_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+  mongodb:
+    image: mongo
+    ports: 
+      - "27018:27017"
+    networks:
+      - rideshare_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+networks:
+  rideshare_network:
+    driver: bridge
+

@@ -2,10 +2,14 @@ var amqp = require('amqplib/callback_api');
 const path = require('path')
 const fs = require('fs')
 
-const dbConfig = require("../config/db.config.js");
+const dbConfig = {
+    HOST: process.env.DB_SERVER || "localhost",
+    USER: process.env.DB_USERNAME || "root",
+    PASSWORD: process.env.DB_PASSWORD || "",
+    DB: process.env.DB_DATABASE || "rideshare"
+}
 const mongoClient = require("mongodb").MongoClient;
 objectId = require('mongodb').ObjectID;
-const url = require("../models/db.js").url
 
 const request = require('request-promise')
 let query = ''
@@ -180,7 +184,7 @@ master = (callback) => {
 
 readDb = (req,callback) => {
 	console.log("Reading Database..")
-	mongoClient.connect(url, (err, db) => {
+	mongoClient.connect(dbConfig.HOST, (err, db) => {
 		if(err){
 			console.error(err.message)
 			return callback(err)
@@ -208,7 +212,7 @@ writeDb = (req , callback) => {
 	if (req.method === "POST") {
 		console.log("Recieved DB write POST request..");
 		if (req.body.table === "users") {
-			mongoClient.connect(url, function(err, db) {  
+			mongoClient.connect(dbConfig.HOST, function(err, db) {  
 				if(err){
 					console.log(err)
 					return callback(err)
@@ -234,7 +238,7 @@ writeDb = (req , callback) => {
 		else if (req.body.table === "rides") {
 
 			if(req.body.update){
-				mongoClient.connect(url, function(err, db) {  
+				mongoClient.connect(dbConfig.HOST, function(err, db) {  
 					dbo=db.db(dbConfig.DB)
 					if(err){
 						console.log(err)
@@ -255,7 +259,7 @@ writeDb = (req , callback) => {
 				});
 			}
 			else{
-				mongoClient.connect(url, function(err, db) {  
+				mongoClient.connect(dbConfig.HOST, function(err, db) {  
 					dbo=db.db(dbConfig.DB)
 					if(err){
 						console.log(err)
@@ -288,7 +292,7 @@ writeDb = (req , callback) => {
 	else if (req.method === "DELETE") {
 		console.log("Recieved DB write DELETE request..");
 		
-		mongoClient.connect(url, function(err, db) {  
+		mongoClient.connect(dbConfig.HOST, function(err, db) {  
 			dbo=db.db(dbConfig.DB)
 			if(err){
 				console.log(err)
