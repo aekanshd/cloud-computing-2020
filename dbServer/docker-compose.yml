@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  web:
+  masterDB:
     build: .
     image: masterDB:latest
 #    command: npm start

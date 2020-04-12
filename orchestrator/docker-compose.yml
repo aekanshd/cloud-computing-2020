@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-  web:
+  orchestrator:
     build: .
-    image: rideshare:latest
+    image: orchestrator:latest
 #    command: npm start
     restart: always
     ports:
