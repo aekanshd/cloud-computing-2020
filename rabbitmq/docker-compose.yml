@@ -4,12 +4,16 @@ services:
   rabbitmq:
 #    image: 'bitnami/rabbitmq:latest'
     build: .
+    networks: 
+      - rabbitmq_network
     ports:
       - '4369:4369'
       - '5672:5672'
       - '25672:25672'
       - '15672:15672'
-    
+networks:
+  rabbitmq_network:
+    driver: bridge
 #    volumes:
 #      - 'rabbitmq_data:/bitnami'
 #volumes:

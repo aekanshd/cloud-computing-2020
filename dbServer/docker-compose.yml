@@ -3,7 +3,7 @@ version: '3'
 services:
   web:
     build: .
-    image: rideshare:latest
+    image: masterDB:latest
 #    command: npm start
     restart: always
     ports:
@@ -11,7 +11,7 @@ services:
     depends_on:
       - mongodb
     networks: 
-      - rideshare_network
+      - master_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
   mongodb:
@@ -19,10 +19,10 @@ services:
     ports: 
       - "27018:27017"
     networks:
-      - rideshare_network
+      - master_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
 networks:
-  rideshare_network:
+  master_network:
     driver: bridge
 

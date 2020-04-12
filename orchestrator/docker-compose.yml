@@ -11,10 +11,10 @@ services:
     depends_on:
       - mongodb
     networks: 
-      - rideshare_network
+      - orchestrator_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
 networks:
-  rideshare_network:
+  orchestrator_network:
     driver: bridge
 
