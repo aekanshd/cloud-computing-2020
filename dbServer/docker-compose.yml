@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-  masterDB:
+  masterdb:
     build: .
-    image: masterDB:latest
+    image: masterdb:latest
 #    command: npm start
     restart: always
     ports:

@@ -5,6 +5,7 @@ services:
     build: .
     image: orchestrator:latest
 #    command: npm start
+    container_name: orchestrator
     restart: always
     ports:
       - "80:8000"
