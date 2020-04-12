@@ -45,7 +45,7 @@ if (role == 'master') {
 	})
 }  
 
-slave = (callback) => {
+function slave(callback){
 	amqp.connect(rabbitServer, opt,function(error0, connection) {
 		if (error0) {
 			return callback(error0)
@@ -127,7 +127,7 @@ syncSlave = (channel,exchange,callback) => {
 	})
 }
 
-master = (callback) => {
+function master(callback) {
 	amqp.connect(rabbitServer, opt,function(error0, connection) {
 		if (error0) {
 			console.log(error0)

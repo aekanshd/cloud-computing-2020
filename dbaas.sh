@@ -1,5 +1,5 @@
 #!/bin/sh
 
-docker-compose up -f rabbitmq/docker-compose.yml -d
-docker-compose up -f orchestrator/docker-compose.yml -d
-docker network connect rabbitmq_network orchestrator_network
+docker-compose -f rabbitmq/docker-compose.yml up --build -d
+docker-compose -f orchestrator/docker-compose.yml up --build -d
+docker network connect rabbitmq_rabbitmq_network orchestrator
