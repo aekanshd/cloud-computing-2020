@@ -11,6 +11,5 @@ RUN npm install
 COPY . .
 #Expose port and start application
 EXPOSE 8000
-CMD ["node","load_locations.js"]
-CMD ["node", "controllers/mainController.js"]
+CMD ["/start.sh"]
 
