@@ -1,6 +1,7 @@
 var amqp = require('amqplib/callback_api');
 const path = require('path')
 const fs = require('fs')
+const Docker = require('dockerode');
 
 const request = require('request-promise')
 
@@ -151,4 +152,24 @@ readData = (req,callback)=>{
 			500
 		);
 	});
+}
+
+
+exports.workerList = (req, res, next) => {
+	let docker = new Docker();
+	
+	docker.listContainers(function (err, containers) {
+		if(err) {
+			return res.status(500).send(err);
+		}
+		
+		let IDs = [];
+		containers.forEach(function (containerInfo) {
+			IDs.push(containerInfo.Id);
+		});
+
+		res.status(200).send(IDs);
+	});
+
+	return;
 }

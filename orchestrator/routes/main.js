@@ -10,4 +10,5 @@ module.exports = function(router){
 	router.post('/db/read',mainController.readDb);
 	router.post('/db/write',mainController.writeDb);
 	router.post('/db/clear',mainController.clearDb);
+	router.get('/worker/list',mainController.workerList);
 };
