@@ -1,28 +1,28 @@
-version: '3'
+version: "3"
 
 services:
-  masterdb:
-    build: .
-    image: masterdb:latest
-#    command: npm start
-    restart: always
-    ports:
-      - "80:8000"
-    depends_on:
-      - mongodb
-    networks: 
-      - master_network
-    environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
-  mongodb:
-    image: mongo
-    ports: 
-      - "27018:27017"
-    networks:
-      - master_network
-    environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
+    masterdb:
+        build: .
+        image: masterdb:latest
+        #    command: npm start
+        restart: always
+        ports:
+            - "30091:8000"
+        depends_on:
+            - mongodb
+        network_mode: host
+        # networks:
+        #     - master_network
+        environment:
+            - TEAM_NAME=CC_0276_0652_0706_1808
+    mongodb:
+        image: mongo
+        ports:
+            - "27018:27017"
+        networks:
+            - master_network
+        environment:
+            - TEAM_NAME=CC_0276_0652_0706_1808
 networks:
-  master_network:
-    driver: bridge
-
+    master_network:
+        driver: bridge

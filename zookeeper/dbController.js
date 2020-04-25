@@ -1,6 +1,6 @@
 var zookeeper = require('node-zookeeper-client');
- 
-var client = zookeeper.createClient('zookeeper:2181');
+
+var client = zookeeper.createClient('localhost:2181');
 const mainPath = 'dbZoo/election'
 
 function emit(client, path) {
@@ -15,19 +15,19 @@ client.once('connected', function () {
         if (err) {
             console.log(err)
             return
-        }   
+        }
         console.log("Initialized Zookeeper Tree...")
         client.close();
         return
     });
 });
 
-function initialize_zoo(client,callback){
-    client.create(mainPath,(err)=>{
+function initialize_zoo(client, callback) {
+    client.create(mainPath, (err) => {
         if (err) {
             return callback(err)
         }
-        client.create(mainPath,(err)=>{
+        client.create(mainPath, (err) => {
             if (err) {
                 return callback(err)
             }
@@ -35,9 +35,9 @@ function initialize_zoo(client,callback){
     })
 }
 
-function createWorkerPath(client, path){
-	const createdPath = client.create(path, '', constants.ZOO_EPHEMERAL|constants.ZOO_SEQUENCE);
-	emit(client, createdPath);
+function createWorkerPath(client, path) {
+    const createdPath = client.create(path, '', constants.ZOO_EPHEMERAL | constants.ZOO_SEQUENCE);
+    emit(client, createdPath);
 }
 
 function createWorker() {

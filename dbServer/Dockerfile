@@ -3,7 +3,7 @@ FROM node:carbon
 # Create app directory
 WORKDIR /usr/src/app
 #Set environment variables
-ENV DB_DATABASE="rideshare" DB_SERVER="mongodb://mongodb:27017/" ROLE="master"
+ENV DB_DATABASE="rideshare" DB_SERVER="mongodb://mongodb:27017/" ROLE="slave"
 # Install app dependencies
 COPY package*.json ./
 RUN npm install
@@ -11,5 +11,4 @@ RUN npm install
 COPY . .
 #Expose port and start application
 EXPOSE 8000
-CMD ["/start.sh"]
-
+CMD ["npm", "start"]

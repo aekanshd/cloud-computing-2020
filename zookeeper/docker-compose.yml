@@ -1,12 +1,19 @@
-version: '3.1'
+version: "3.1"
 
 services:
-  zoo1:
-    image: zookeeper
-    restart: always
-    hostname: zoo1
-    ports:
-      - 2181:2181
-    environment:
-      ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+    zoo1:
+        image: zookeeper
+        restart: always
+        hostname: zoo
+        ports:
+            - 2181:2181
+            - 8080:8080
+        networks:
+            - zookeeper
+        environment:
+            ZOO_MY_ID: 1
+            ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+
+networks:
+    zookeeper:
+        driver: bridge
