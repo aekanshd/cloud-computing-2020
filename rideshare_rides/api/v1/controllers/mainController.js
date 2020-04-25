@@ -7,7 +7,8 @@ objectId = require('mongodb').ObjectID;
 const url = require("../models/db.js").url
 const request = require("request-promise")
 const getIP = require('external-ip')();
-uri_base = "http://localhost:8000/api/v1/"
+//uri_base = "http://localhost:8000/api/v1/"   //for local database
+uri_base = ""
 user_service = "http://rideshare-load-balancer-1262700400.us-east-1.elb.amazonaws.com/"
 
 exports.home = (req, res, next) => {
@@ -184,7 +185,7 @@ exports.getRide = (req, res, next) => {
 	request(options)
 		.then(response => {
 			if (response.length === 0) return res.status(404).send("404: Ride ID Not Found")
-					console.log("Rides Exists")
+					console.log("Ride Exists")
 					let users = new Array()
 					//nextResponse.forEach(element => { users.push(element.userid) })
 					if(response[0].users) users = response[0].users;
@@ -317,6 +318,48 @@ exports.deleteRide = (req, res, next) => {
 		.catch(err => res.status(500).send(err))
 }
 
+
+//Get the total number of rides
+
+exports.count = (req, res, next) =>{
+	console.log("List the number of rides");
+	var table = "rides";
+	var qry = {}
+	reqBody={
+		"table": table,
+		"where" : qry
+	}
+	var out = [];
+	const options = { method: 'POST', uri: uri_base+'db/read', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		
+		return res.status(200).send(response.length)
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
+
+	/*mongoClient.connect(url, function(err, db) {  
+		if(err){
+				console.error(err.message)
+				return res.status(405).send(err)
+			}  
+		dbo=db.db(dbConfig.DB)
+		dbo.collection(table).find({"_id":{$ne:null}}).count((err,count) => {
+			if(err){
+				console.error(err.message);
+				return res.status(405).send(err);
+			}
+			db.close();
+			out.push(count);
+			return res.status(200).send(out);
+
+		});
+	});*/
+}
+
 // 8. Write data to the DB
 
 exports.writeDb = (req, res, next) => {
@@ -395,6 +438,26 @@ exports.writeDb = (req, res, next) => {
 					});  
 				});
 			}
+		}
+		else if (req.body.table === "rides_meta" || req.body.table === "users_meta") {
+			mongoClient.connect(url,function(err,db) {
+				if(err) {
+					console.err(err.message);
+					return res.status(405).send(err)
+				}
+				dbo = db.db(dbConfig.DB);
+				var qry = request.body.qry;
+				var update = req.body.update;
+				dbo.collection(req.body.table).updateOne(qry, update, (err,out) => {
+					if(err) {
+						console.error(err.message);
+						return res.status(405).send(err);
+					}
+					db.close();					
+					return res.status(200).send(out);
+				})
+			});
+		
 		}
 
 		else {
@@ -483,54 +546,28 @@ exports.readDb = (req, res, next) => {
 	res.status(200).send();
  }
 
-//11 . Count number of rides
-exports.count = (req,res,next) => {
-	console.log("List Number of Rides");
-	var table = "rides";
-	mongoClient.connect(url,function(err,db) {
-		if(err) {
-			console.err(err.message);
-			return res.status(405).send(err)
-		}
-		dbo = db.db(dbConfig.DB);
-		dbo.collection(table).find().count((err,count) => {
-			if(err) {
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			var out =[];
-			out.push(count);
-			return res.status(200).send(out);
-		})
-	});
-
-}
-
 // Increment Number of requests
 
 exports.requestsCountIncrement = (req,res,next) => {
 	console.log("Increment Count of requests..");
 	var table = "rides_meta";
-	mongoClient.connect(url,function(err,db) {
-		if(err) {
-			console.err(err.message);
-			return res.status(405).send(err)
-		}
-		dbo = db.db(dbConfig.DB);
-		var qry = {"meta_name":"requests_counter"}
-		var update = {$inc: {"count":1}}
-		dbo.collection(table).updateOne(qry, update, (err,count) => {
-			if(err) {
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			next();
-			//return res.status(200).send(out);
-		})
-	});
-
+	var qry = {"meta_name":"requests_counter"}
+	var update = {$inc: {"count":1}}
+	var reqBody = {
+		"qry":qry,
+		"update":update,
+		"table":table
+	}
+	const options = { method: 'POST', uri: uri_base+'db/write', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		console.log(response)
+		next();
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
 }
 
 // Reset request counter
@@ -539,33 +576,48 @@ exports.requestsCountIncrement = (req,res,next) => {
 exports.resetRequestsCount = (req,res,next) => {
 	console.log("Reset Count of requests..");
 	var table = "rides_meta";
-	mongoClient.connect(url,function(err,db) {
-		if(err) {
-			console.err(err.message);
-			return res.status(405).send(err)
-		}
-		dbo = db.db(dbConfig.DB);
-		var qry = {"meta_name":"requests_counter"}
-		var update = {$set: {"count":0}}
-		dbo.collection(table).updateOne(qry, update, (err,count) => {
-			if(err) {
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			
-			return res.status(200).send();
-		})
-	});
-
+	var qry = {"meta_name":"requests_counter"}
+	var update = {$set: {"count":0}}
+	var reqBody = {
+		"qry":qry,
+		"update":update,
+		"table":table
+	}
+	const options = { method: 'POST', uri: uri_base+'db/write', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		console.log(response)
+		next();
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
 }
 
 // Return number of requests made
-
-
 exports.getRequestsCount = (req,res,next) => {
 	console.log("Return Count of requests..");
 	var table = "rides_meta";
+	console.log("Return Count of requests..");
+	var qry = {
+		"meta_name":"requests_counter"
+	}
+	reqBody = {
+		"table":table,
+		"where":qry
+	}
+	const options = { method: 'POST', uri: uri_base+'db/read', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		
+		return res.status(200).send(response[0].count)
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
+	/*
 	mongoClient.connect(url,function(err,db) {
 		if(err) {
 			console.err(err.message);
@@ -585,30 +637,5 @@ exports.getRequestsCount = (req,res,next) => {
 			return res.status(200).send([count[0].count]);
 		});
 	});
-
-}
-
-//Get the total number of rides
-
-exports.count = (req, res, next) =>{
-	console.log("List the number of rides");
-	var table = "rides";
-	var out = [];
-	mongoClient.connect(url, function(err, db) {  
-		if(err){
-				console.error(err.message)
-				return res.status(405).send(err)
-			}  
-		dbo=db.db(dbConfig.DB)
-		dbo.collection(table).find({"_id":{$ne:null}}).count((err,count) => {
-			if(err){
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			out.push(count);
-			return res.status(200).send(out);
-
-		});
-	});
+	*/
 }

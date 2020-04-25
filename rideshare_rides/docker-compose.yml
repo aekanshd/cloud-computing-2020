@@ -8,19 +8,7 @@ services:
     restart: always
     ports:
       - "80:8000"
-    links:
-      - mongodb_rides
-    depends_on:
-      - mongodb_rides
     networks: 
-      - rideshare_network
-    environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
-  mongodb_rides:
-    image: mongo
-    ports: 
-      - "27018:27017"
-    networks:
       - rideshare_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808

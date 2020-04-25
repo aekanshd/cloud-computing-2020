@@ -7,16 +7,7 @@ services:
     restart: always
     ports:
       - "80:8000"
-    links:
-      - mongodb_users
-    depends_on:
-      - mongodb_users
     environment:
       - TEAM_NAME=CC_706_276_1808_652
-  mongodb_users:
-    image: mongo
-    ports:
-      - "27019:27017"
-    environment:
-      - TEAM_NAME=CC_706_276_1808_652
+
 

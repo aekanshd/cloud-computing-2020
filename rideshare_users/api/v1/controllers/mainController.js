@@ -5,9 +5,8 @@ const dbConfig = require("../config/db.config.js");
 const mongoClient = require("mongodb").MongoClient;
 const url = require('../models/db.js').url
 const request = require('request-promise')
-uri_base = "http://localhost:8000/api/v1/"
-
-
+//uri_base = "http://localhost:8000/api/v1/"   //for local database
+uri_base = ""
 exports.home = (req, res, next) => {
 	res.send("Welcome!")
 }
@@ -194,6 +193,27 @@ exports.writeDb = (req, res, next) => {
 				});
 			}
 		}
+		
+		else if (req.body.table === "rides_meta" || req.body.table === "users_meta") {
+			mongoClient.connect(url,function(err,db) {
+				if(err) {
+					console.err(err.message);
+					return res.status(405).send(err)
+				}
+				dbo = db.db(dbConfig.DB);
+				var qry = request.body.qry;
+				var update = req.body.update;
+				dbo.collection(req.body.table).updateOne(qry, update, (err,out) => {
+					if(err) {
+						console.error(err.message);
+						return res.status(405).send(err);
+					}
+					db.close();					
+					return res.status(200).send(out);
+				})
+			});
+		
+		}
 
 		else {
 			res.status(400).send('Table Not Supported')
@@ -279,57 +299,69 @@ exports.clearDb = (req, res, next) => {
 exports.requestsCountIncrement = (req,res,next) => {
 	console.log("Increment Count of requests..");
 	var table = "users_meta";
-	mongoClient.connect(url,function(err,db) {
-		if(err) {
-			console.err(err.message);
-			return res.status(405).send(err)
-		}
-		dbo = db.db(dbConfig.DB);
-		var qry = {"meta_name":"requests_counter"}
-		var update = {$inc: {"count":1}}
-		dbo.collection(table).updateOne(qry, update, (err,count) => {
-			if(err) {
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			next();
-			//return res.status(200).send(out);
-		})
-	});
-
+	var qry = {"meta_name":"requests_counter"}
+	var update = {$inc: {"count":1}}
+	var reqBody = {
+		"qry":qry,
+		"update":update,
+		"table":table
+	}
+	const options = { method: 'POST', uri: uri_base+'db/write', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		console.log(response)
+		next();
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
 }
 
 // Reset request counter
 
+
 exports.resetRequestsCount = (req,res,next) => {
 	console.log("Reset Count of requests..");
-	var table = "users_meta";
-	mongoClient.connect(url,function(err,db) {
-		if(err) {
-			console.err(err.message);
-			return res.status(405).send(err)
-		}
-		dbo = db.db(dbConfig.DB);
-		var qry = {"meta_name":"requests_counter"}
-		var update = {$set: {"count":0}}
-		dbo.collection(table).updateOne(qry, update, (err,count) => {
-			if(err) {
-				console.error(err.message);
-				return res.status(405).send(err);
-			}
-			db.close();
-			return res.status(200).send(out);
-		})
-	});
-
+	var table = "userss_meta";
+	var qry = {"meta_name":"requests_counter"}
+	var update = {$set: {"count":0}}
+	var reqBody = {
+		"qry":qry,
+		"update":update,
+		"table":table
+	}
+	const options = { method: 'POST', uri: uri_base+'db/write', body: reqBody, json: true }
+	request(options)
+	.then(response=>{
+		console.log(response)
+		next();
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
 }
 
-
-
 // Return number of requests made
+
 exports.getRequestsCount = (req,res,next) => {
 	console.log("Return Count of requests..");
+	var qry = {
+		"table":"users_meta",
+		"meta_name":"requests_counter"
+	}
+	const options = { method: 'POST', uri: uri_base+'db/read', body: qry, json: true }
+	request(options)
+	.then(response=>{
+		
+		return res.status(200).send(response[0].count)
+	})
+	.catch(err=>{
+		console.log(err);
+		return res.staus(500).send({})
+	})
+	/*
 	var table = "users_meta";
 	mongoClient.connect(url,function(err,db) {
 		if(err) {
@@ -350,5 +382,6 @@ exports.getRequestsCount = (req,res,next) => {
 			return res.status(200).send([count[0].count]);
 		});
 	});
+	*/
 
 }
