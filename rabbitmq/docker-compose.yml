@@ -1,4 +1,4 @@
-version: '2'
+version: '3.5'
 
 services:
   rabbitmq:
@@ -13,7 +13,8 @@ services:
       - '15672:15672'
 networks:
   rabbitmq_network:
-    driver: bridge
+    name: rabbitmq_network
+#    driver: rabbit-driver
 #    volumes:
 #      - 'rabbitmq_data:/bitnami'
 #volumes:

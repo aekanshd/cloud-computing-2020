@@ -1,28 +1,23 @@
-version: "3"
+version: "3.5"
 
 services:
-    masterdb:
+    dbworker:
         build: .
-        image: masterdb:latest
-        #    command: npm start
+        image: dbworker:latest
+        container_name: master
         restart: always
-        ports:
-            - "30091:8000"
+        networks: 
+          - rabbitmq_network
         depends_on:
             - mongodb
-        network_mode: host
-        # networks:
-        #     - master_network
         environment:
             - TEAM_NAME=CC_0276_0652_0706_1808
     mongodb:
-        image: mongo
-        ports:
-            - "27018:27017"
-        networks:
-            - master_network
+        image: bitnami/mongodb
+        container_name: mongo
         environment:
             - TEAM_NAME=CC_0276_0652_0706_1808
+
 networks:
-    master_network:
-        driver: bridge
+    rabbitmq_network:
+        external: true 

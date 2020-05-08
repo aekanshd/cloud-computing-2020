@@ -1,0 +1,35 @@
+version: '3.5'
+
+services:
+  dbworker:
+    build: .
+    image: dbworker_master:latest
+    container_name: dbworker_master
+#    command: npm start
+    restart: always
+    ports:
+      - "80:8000"
+    depends_on:
+      - mongodb
+    networks: 
+      - master_network
+      - rabbitmq_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+      - ROLE=master
+  mongodb:
+    image: mongo
+    container_name: mongodb_master
+    expose: 
+      - "27017"
+    networks:
+      - master_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+networks:
+  master_network:
+    name: master_network
+    driver: bridge
+  rabbitmq_network:
+    external: true
+

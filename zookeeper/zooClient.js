@@ -1,6 +1,6 @@
 var zookeeper = require("node-zookeeper-client");
 
-var client = zookeeper.createClient("localhost:2181");
+var client = zookeeper.createClient("zoo:2181");
 
 let createPath = (client, path) => {
 	client.create(path, (error) => {

@@ -16,7 +16,7 @@ state = {
 };
 
 // Connect to server at localhost and initiate client
-var client = zookeeper.createClient("localhost:2181", { retries: 3 });
+var client = zookeeper.createClient("zoo:2181", { retries: 3 });
 
 // Function to create a path
 let createPath = (client, path, mode = CreateMode.PERSISTENT) => {
@@ -42,9 +42,7 @@ setLeaderWatch = (client) => {
 				);
 				return;
 			}
-
 			console.log("Children of %s are: %j.", "/election", children);
-
 			state.electionNodes = children.sort();
 			state.leader = state.electionNodes[0];
 

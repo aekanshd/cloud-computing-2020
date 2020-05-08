@@ -1,6 +1,7 @@
 var amqp = require('amqplib/callback_api');
 const path = require('path')
 const fs = require('fs')
+var async = require("async");
 
 const dbConfig = {
 	HOST: process.env.DB_SERVER || "localhost",
@@ -15,7 +16,7 @@ const request = require('request-promise')
 let query = ''
 
 rabbit = {
-	hostname: "amqp://localhost/",
+	hostname: "amqp://rabbitmq:5672/",
 	virtualHost: "rideshare",
 	user: "ravi",
 	password: "ravi"
@@ -46,64 +47,79 @@ if (role == 'master') {
 	console.log("Slave")
 	slave((err, res) => {
 		if (err) {
-			throw error
+			throw err
 		}
 		console.log(res)
 	})
 }
 
 function slave(callback) {
-	amqp.connect(rabbitServer, opt, function (error0, connection) {
-		if (error0) {
-			return callback(error0)
+	amqp.connect(rabbitServer, opt, function (err, connection) {
+		if (err) {
+			return callback(err)
 		}
-		connection.createChannel((err, channel) => {
+		process.once('SIGINT', function() { connection.close(); });
+		connection.createChannel((err, readChannel) => {
 			if (err) {
 				return callback(err)
 			}
-			//Read queue
-			var readQueue = "read"
-			//Sync queue
-			var exchange = "syncExchange"
-			channel.assertExchange(exchange, 'fanout', {
-				durable: false
+			readChannel.prefetch(1)
+			connection.createChannel((err, syncChannel) => {
+				if (err) {
+					return callback(err)
+				}
+				syncChannel.prefetch(1)
+				//Read queue
+				var readQueue = "read"
+				readChannel.assertQueue(readQueue, {
+					durable: true
+				});
+				console.log(" [*] Waiting for messages in Read Queue. To exit press CTRL+C");
+				//Sync queue
+				var exchange = "syncExchange"
+				syncChannel.assertExchange(exchange, 'fanout', {
+					durable: true
+				})				
+				async.parallel(
+				[()=>{readChannel.consume(readQueue, (msg) => {
+					console.log(msg.content.toString())
+					consumeReadQueue(msg)					
+					})}
+				,
+				()=>{syncSlave(syncChannel, exchange, callback)}]
+				,
+				(err, results) => {
+					if(err) {
+						console.log(err)
+						return callback(err)
+					}
+					console.log(results)
+					return callback(null,results)
+				})
 			})
-			async.parallel([consumeReadQueue(channel, readQueue), syncSlave(channel, exchange)],
-				callback(err, results)
-			)
-		})
-		setTimeout(function () {
-			connection.close()
-			process.exit(0)
-		}, 500)
+		})	 
 	})
 }
 
-consumeReadQueue = (channel, queue, callback) => {
-	channel.assertQueue(queue, {
-		durable: false
-	});
-	console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", readQueue);
-	channel.consume(readQueue, (msg) => {
+consumeReadQueue = (msg) => {
+	//console.log(channel)
+	if (msg!=null) {
 		query = msg.content.toString()
 		console.log(" [x] Received %s", query);
+		/*
 		readDb(JSON.parse(query), (err, res) => {
 			if (err) {
 				console.log(err)
-				return callback(err)
+				return
 			} else {
 				var responseQueue = "response"
 				channel.assertQueue(responseQueue, {
 					durable: false
 				})
 				channel.sendToQueue(responseQueue, Buffer.from(res.toString()))
-				return callback(null, res)
 			}
-		})
-	},
-		{
-			noAck: false
-		})
+		})*/
+	}
 }
 
 syncSlave = (channel, exchange, callback) => {
@@ -114,19 +130,21 @@ syncSlave = (channel, exchange, callback) => {
 			console.log(err)
 			return callback(err)
 		}
-		console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", q.queue);
+		console.log("Sync function..")
+		console.log(" [*] Waiting for messages in Sync Queue. To exit press CTRL+C");
 		channel.bindQueue(q.queue, exchange, '');
 		channel.consume(q.queue, function (msg) {
 			if (msg.content) {
-				data = msg.content.toString()
-				console.log(" [x] %s", data);
+				console.log(" [x] message %s", msg.content.toString());
+				/*data = msg.content.toString()
+				console.log(" [x] Recieved %s", data);
 				writeDb(JSON.parse(data), (err, res) => {
 					if (err) {
 						console.log(err)
 						return callback(err)
 					}
 					return callback(null, res)
-				})
+				})*/
 			}
 		}, {
 			noAck: true
@@ -148,8 +166,9 @@ function master(callback) {
 			//Write queue
 			var writeQueue = "write"
 			channel.assertQueue(writeQueue, {
-				durable: false
+				durable: true
 			});
+			channel.prefetch(1)
 			console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", writeQueue);
 			channel.consume(writeQueue, (msg) => {
 				query = msg.content.toString()
@@ -178,13 +197,10 @@ function master(callback) {
 				})
 			},
 				{
-					noAck: false
+					noAck: true
 				})
 		})
-		setTimeout(function () {
-			connection.close()
-			process.exit(0)
-		}, 500)
+		
 	})
 }
 

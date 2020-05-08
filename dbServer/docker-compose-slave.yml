@@ -1,0 +1,35 @@
+version: '3.5'
+
+services:
+  dbworker:
+    build: .
+    image: dbworker_slave:latest
+    container_name: dbworker_slave
+#    command: npm start
+    restart: always
+    ports:
+      - "80:8000"
+    depends_on:
+      - mongodb
+    networks: 
+      - slave_network
+      - rabbitmq_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+      - ROLE=slave
+  mongodb:
+    image: mongo
+    container_name: mongodb_slave
+    expose: 
+      - "27017"
+    networks:
+      - slave_network
+    environment:
+      - TEAM_NAME=CC_0276_0652_0706_1808
+networks:
+  slave_network:
+    name: slave_network
+    driver: bridge
+  rabbitmq_network:
+    external: true
+
