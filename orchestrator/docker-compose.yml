@@ -14,6 +14,8 @@ services:
       - rabbitmq_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 networks:
   orchestrator_network:
     name: orchestrator_network

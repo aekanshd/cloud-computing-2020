@@ -43,7 +43,7 @@ function initialiseWorkers() {
 			})
 		})
 	})
-	docker.listNetworks((err, netwoks) => {
+	docker.listNetworks((err, networks) => {
 		if(err) {
 			console.log("Failed to List Networkss\n")
 			console.log(err)
