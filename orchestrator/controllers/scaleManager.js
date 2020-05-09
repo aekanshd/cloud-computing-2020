@@ -7,6 +7,58 @@ var reqRate = 0
 var workerCount = []
 var workers = {}
 
+function initialiseWorkers() {
+	docker.listContainers((err, containers) => {
+		if(err) {
+			console.log("Failed to List Containers\n")
+			console.log(err)
+			return
+		}
+		containers.forEach((container)=>{
+			container.Names.forEach((name)=>{
+				if (name == "/dbworker_master") {
+					if (!workers["master"]) {
+						workers["master"] = {}
+					}
+					workers["master"]["serverId"] = container.Id 
+				}
+				else if (name == "/dbworker_slave") {
+					if (!workers["slave"]) {
+						workers["slave"] = {}
+					}
+					workers["slave"]["serverId"] = container.Id 
+				}
+				else if (name == "/mongodb_master") {
+					if (!workers["master"]) {
+						workers["master"] = {}
+					}
+					workers["master"]["dbId"] = container.Id 
+				}
+				else if (name == "/mongodb_slave") {
+					if (!workers["slave"]) {
+						workers["slave"] = {}
+					}
+					workers["slave"]["dbId"] = container.Id 
+				}	
+			})
+		})
+	})
+	docker.listNetworks((err, netwoks) => {
+		if(err) {
+			console.log("Failed to List Networkss\n")
+			console.log(err)
+			return
+		}
+		networks.forEach((network)=>{
+			if (network.Name == "master_network") {
+				workers["master"]["networkId"] = network.Id
+			}
+			else if (network.Name == "slave_network") {
+				workers["slave"]["networkId"] = network.Id
+			}
+		})
+	})	
+}
 
 function getNextIndex() {
 	var i=1;
@@ -188,6 +240,6 @@ function updateWorkers() {
 	}	
 }
 
-
+initialiseWorkers()
 setInterval(updateWorkers,1000*120)
 

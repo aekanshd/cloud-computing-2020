@@ -1,4 +1,4 @@
-version: '3'
+version: '3.5'
 
 services:
   orchestrator:
@@ -11,9 +11,13 @@ services:
       - "80:8000"
     networks: 
       - orchestrator_network
+      - rabbitmq_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
 networks:
   orchestrator_network:
+    name: orchestrator_network
     driver: bridge
+  rabbitmq_network:
+    external: true
 
