@@ -2,8 +2,8 @@
 
 docker-compose -f rabbitmq/docker-compose.yml up --build -d
 docker-compose -f zookeeper/docker-compose.yml up --build -d
-docker-compose -f dbserver/docker-compose-master.yml up --build -d
-docker-compose -f dbserver/docker-compose-slave.yml up --build -d
+docker-compose -f dbServer/docker-compose-master.yml up --build -d
+docker-compose -f dbServer/docker-compose-slave.yml up --build -d
 docker-compose -f orchestrator/docker-compose.yml up --build -d
-docker network connect rabbitmq_rabbitmq_network orchestrator
-docker network connect zookeeper_zookeeper dbserver_masterdb_1
+
+

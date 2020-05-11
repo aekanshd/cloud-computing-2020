@@ -12,6 +12,7 @@ services:
     networks: 
       - orchestrator_network
       - rabbitmq_network
+      - zookeeper_network
     environment:
       - TEAM_NAME=CC_0276_0652_0706_1808
     volumes:
@@ -22,4 +23,5 @@ networks:
     driver: bridge
   rabbitmq_network:
     external: true
-
+  zookeeper_network:
+    external: true

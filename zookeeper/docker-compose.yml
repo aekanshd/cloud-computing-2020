@@ -1,8 +1,9 @@
-version: "3.1"
+version: "3.5"
 
 services:
     zoo:
         image: zookeeper
+        container_name: zookeeper
         restart: always
         hostname: zoo
         ports:
@@ -16,4 +17,6 @@ services:
 
 networks:
     zookeeper:
+        name: zookeeper_network
         driver: bridge
+    
