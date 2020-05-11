@@ -299,11 +299,36 @@ exports.crashMaster = (req, res, next) => {
 };
 
 exports.crashSlave = (req, res, next) => {
-	if (workers["slave"] == undefined) res.status(404).send();
-
-	docker.getContainer(workers["slave"]["serverId"]).stop();
-	docker.getContainer(workers["slave"]["dbId"]).stop();
-	res.status(200).send({});
+	var maxPid = 0
+	var cId = "" 
+	docker.listContainers(function (err, containers) {
+		if (err) {
+			return res.status(500).send(err);
+		}
+		containers.forEach(function (containerInfo) {
+			docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+				if (data["Name"].startsWith("dbworker")){
+					console.log(data["State"]["Pid"]);
+					if (data["State"]["Pid"] > maxPid) {
+						maxPid(data["State"]["Pid"])
+						cId = containerInfo.Id
+					}
+				}
+			});
+		});
+		for (var key in workers) {
+			if (workers[key].serverId == cId ) {
+				deleteWorker(key,(err,data) => {
+					if(err) {
+						console.log(err)
+						res.status(500).send({});
+					}
+					res.status(200).send({});
+				})
+			}
+		}
+			
+	});
 
 	return;
 };
