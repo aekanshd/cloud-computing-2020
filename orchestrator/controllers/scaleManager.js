@@ -9,53 +9,51 @@ var workers = {}
 
 function initialiseWorkers() {
 	docker.listContainers((err, containers) => {
-		if(err) {
-			console.log("Failed to List Containers\n")
-			console.log(err)
-			return
-		}
+	
 		containers.forEach((container)=>{
 			container.Names.forEach((name)=>{
+			console.log(name)
 				if (name == "/dbworker_master") {
-					if (!workers["master"]) {
+					if (workers["master"]==undefined) {
 						workers["master"] = {}
 					}
 					workers["master"]["serverId"] = container.Id 
+					console.log("master set")
 				}
 				else if (name == "/dbworker_slave") {
-					if (!workers["slave"]) {
+					if (workers["slave"]==undefined) {
 						workers["slave"] = {}
 					}
 					workers["slave"]["serverId"] = container.Id 
 				}
 				else if (name == "/mongodb_master") {
-					if (!workers["master"]) {
+					if (workers["master"]==undefined) {
 						workers["master"] = {}
 					}
 					workers["master"]["dbId"] = container.Id 
 				}
 				else if (name == "/mongodb_slave") {
-					if (!workers["slave"]) {
+					if (workers["slave"]==undefined) {
 						workers["slave"] = {}
 					}
 					workers["slave"]["dbId"] = container.Id 
 				}	
 			})
 		})
-	})
-	docker.listNetworks((err, networks) => {
-		if(err) {
-			console.log("Failed to List Networkss\n")
-			console.log(err)
-			return
-		}
-		networks.forEach((network)=>{
-			if (network.Name == "master_network") {
-				workers["master"]["networkId"] = network.Id
+		docker.listNetworks((err, networks) => {
+			if(err) {
+				console.log("Failed to List Networkss\n")
+				console.log(err)
+				return
 			}
-			else if (network.Name == "slave_network") {
-				workers["slave"]["networkId"] = network.Id
-			}
+			networks.forEach((network) => {
+				if (network.Name == "master_network") {
+					workers["master"]["networkId"] = network.Id
+				}
+				else if (network.Name == "slave_network") {
+					workers["slave"]["networkId"] = network.Id
+				}
+			})
 		})
 	})	
 }
@@ -77,11 +75,10 @@ function getNextIndex() {
 function createWorker(callback) {
 	workerIndex = getNextIndex()		
 	replicateContainer("mongodb_master","mongodb_clone_"+workerIndex,"mongodb_slave_"+workerIndex,(err,newSlaveId) => {
-		if (err){
+		if (err) {
 			console.log(err)
 			return callback(err)
 		}
-		
 		docker.createNetwork({
 			"Name": "slave_network_"+workerIndex,
 			"Driver": "bridge"
@@ -98,8 +95,8 @@ function createWorker(callback) {
 					console.log(err)
 					return callback(err)
 				}
-				docker.run("dbworker_slave",[],undefined,{name: "dbworker_slave_"+workerIndex, Env: ["ROLE=slave"], 
-				HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network'}}
+				docker.run("dbworker_slave",[],undefined,{name: "dbworker_slave_"+workerIndex, Env: ["ROLE=slave","DB_HOST="], 
+				HostConfig: { AutoRemove: true}}
 				,(err,data,container) => {
 					if(err) {
 						console.log(err)
@@ -111,19 +108,31 @@ function createWorker(callback) {
 							console.log(err)
 							return callback(err)
 						}
-						workers[workerIndex] = {
+						docker.listNetworks((err,networks)=>{
+							if (err) {
+								console.log("failed to list networks")
+								process.exit(0)
+							}
+							networks.forEach((network)=>{
+								if(network.Name == "zookeeper_network" || network.Name == "rabbitmq_network" ){
+									net = docker.getNetwork(network.Id)
+									net.connect(container.id)
+								}
+							})
+							workers[workerIndex] = {
 							"serverId": container.id,
 							"mongodbId": newSlaveId,
 							"networkId": network.id
-						}
-						return (null,"New worker created successfully...")					
-				})	
+							}
+							return callback(null,"New worker created successfully...")	
+						})		
+					})	
+				})
 			})
+		
 		})
 		
 	})
-		
-})
 }
 
 

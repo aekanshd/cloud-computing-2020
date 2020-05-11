@@ -3,7 +3,8 @@ const fs = require('fs');
 const mongoClient = require('mongodb').MongoClient
 const dbName = "rideshare"
 record_count = 0
-mongoClient.connect('mongodb://mongodb:27017', function(err, db) {
+mongo_host = process.env.DB_HOST
+mongoClient.connect('mongodb://'+mongo_host+':27017', function(err, db) {
 	if(err){
 		console.error(err.message)
 		return err
