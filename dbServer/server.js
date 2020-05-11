@@ -22,10 +22,10 @@ app.use(cookieParser());
 
 // Index API Route
 app.get("/", function (req, res) {
-	var api_routes = "";
-	api_routes += "GET /" + "<br>";
-	api_routes += "GET /api" + "<br>";
-	res.send("Available APIs:<br><br>" + api_routes);
+  var api_routes = "";
+  api_routes += "GET /" + "<br>";
+  api_routes += "GET /api" + "<br>";
+  res.send("Available APIs:<br><br>" + api_routes);
 });
 
 // API routes
@@ -41,9 +41,8 @@ console.log("Server has been started.");
 var server = require("http").createServer(app);
 server.listen(0);
 
-
 if (process.env.ROLE == "master") {
-	console.log("Acting as Master");
+  console.log("Acting as Master");
 } else {
-	console.log("Acting as Slave");
+  console.log("Acting as Slave");
 }

@@ -2,7 +2,7 @@
 
 // Import Zookeeper
 var zookeeper = require("node-zookeeper-client");
-const { spawn } = require('child_process');
+const { spawn } = require("child_process");
 CreateMode = zookeeper.CreateMode;
 Event = zookeeper.Event;
 
@@ -50,23 +50,25 @@ setLeaderWatch = (client) => {
 				// Switch to master
 				console.log("Switching to master");
 				process.env.ROLE = "master";
-				state.SERVER.kill()
-				const server = spawn("node", ["./controllers/mainController.js"]);
+				state.SERVER.kill();
+				const server = spawn("node", [
+					"./controllers/mainController.js",
+				]);
 
-				server.on("close", code => {
+				server.on("close", (code) => {
 					console.log(`Child process exited with code ${code}`);
 					process.exit(1);
-				})
+				});
 
 				server.on("error", (error) => {
 					console.log(`error: ${error.message}`);
-				})
+				});
 
-				server.stdout.on("data", data => {
+				server.stdout.on("data", (data) => {
 					console.log(`stdout: ${data}`);
 				});
 
-				server.stderr.on("data", data => {
+				server.stderr.on("data", (data) => {
 					console.log(`stderr: ${data}`);
 				});
 
@@ -97,20 +99,20 @@ client.once("connected", () => {
 
 	const server = spawn("node", ["./controllers/mainController.js"]);
 
-	server.on("close", code => {
+	server.on("close", (code) => {
 		console.log(`Child process exited with code ${code}`);
 		process.exit(1);
-	})
+	});
 
 	server.on("error", (error) => {
 		console.log(`error: ${error.message}`);
-	})
+	});
 
-	server.stdout.on("data", data => {
+	server.stdout.on("data", (data) => {
 		console.log(`stdout: ${data}`);
 	});
 
-	server.stderr.on("data", data => {
+	server.stderr.on("data", (data) => {
 		console.log(`stderr: ${data}`);
 	});
 

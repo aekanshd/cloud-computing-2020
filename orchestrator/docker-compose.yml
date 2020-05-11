@@ -1,27 +1,27 @@
-version: '3.5'
+version: "3.5"
 
 services:
-  orchestrator:
-    build: .
-    image: orchestrator:latest
-#    command: npm start
-    container_name: orchestrator
-    restart: always
-    ports:
-      - "80:8000"
-    networks: 
-      - orchestrator_network
-      - rabbitmq_network
-      - zookeeper_network
-    environment:
-      - TEAM_NAME=CC_0276_0652_0706_1808
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    orchestrator:
+        build: .
+        image: orchestrator:latest
+        #    command: npm start
+        container_name: orchestrator
+        restart: always
+        ports:
+            - "80:8000"
+        networks:
+            - orchestrator_network
+            - rabbitmq_network
+            - zookeeper_network
+        environment:
+            - TEAM_NAME=CC_0276_0652_0706_1808
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
 networks:
-  orchestrator_network:
-    name: orchestrator_network
-    driver: bridge
-  rabbitmq_network:
-    external: true
-  zookeeper_network:
-    external: true
+    orchestrator_network:
+        name: orchestrator_network
+        driver: bridge
+    rabbitmq_network:
+        external: true
+    zookeeper_network:
+        external: true

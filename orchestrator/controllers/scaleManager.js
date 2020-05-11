@@ -1,254 +1,334 @@
-Docker = require("dockerode")
+Docker = require("dockerode");
 //tar = require("tar-fs")
-path = require("path")
+path = require("path");
 let docker = new Docker();
-const request = require('request-promise')
-var reqRate = 0
-var workerCount = []
-var workers = {}
+const request = require("request-promise");
+var reqRate = 0;
+var workerCount = [];
+var workers = {};
 
 function initialiseWorkers() {
 	docker.listContainers((err, containers) => {
-	
-		containers.forEach((container)=>{
-			container.Names.forEach((name)=>{
-			console.log(name)
+		containers.forEach((container) => {
+			container.Names.forEach((name) => {
+				console.log(name);
 				if (name == "/dbworker_master") {
-					if (workers["master"]==undefined) {
-						workers["master"] = {}
+					if (workers["master"] == undefined) {
+						workers["master"] = {};
 					}
-					workers["master"]["serverId"] = container.Id 
-					console.log("master set")
+					workers["master"]["serverId"] = container.Id;
+					console.log("master set");
+				} else if (name == "/dbworker_slave") {
+					if (workers["slave"] == undefined) {
+						workers["slave"] = {};
+					}
+					workers["slave"]["serverId"] = container.Id;
+				} else if (name == "/mongodb_master") {
+					if (workers["master"] == undefined) {
+						workers["master"] = {};
+					}
+					workers["master"]["dbId"] = container.Id;
+				} else if (name == "/mongodb_slave") {
+					if (workers["slave"] == undefined) {
+						workers["slave"] = {};
+					}
+					workers["slave"]["dbId"] = container.Id;
 				}
-				else if (name == "/dbworker_slave") {
-					if (workers["slave"]==undefined) {
-						workers["slave"] = {}
-					}
-					workers["slave"]["serverId"] = container.Id 
-				}
-				else if (name == "/mongodb_master") {
-					if (workers["master"]==undefined) {
-						workers["master"] = {}
-					}
-					workers["master"]["dbId"] = container.Id 
-				}
-				else if (name == "/mongodb_slave") {
-					if (workers["slave"]==undefined) {
-						workers["slave"] = {}
-					}
-					workers["slave"]["dbId"] = container.Id 
-				}	
-			})
-		})
+			});
+		});
 		docker.listNetworks((err, networks) => {
-			if(err) {
-				console.log("Failed to List Networkss\n")
-				console.log(err)
-				return
+			if (err) {
+				console.log("Failed to List Networkss\n");
+				console.log(err);
+				return;
 			}
 			networks.forEach((network) => {
 				if (network.Name == "master_network") {
-					workers["master"]["networkId"] = network.Id
+					workers["master"]["networkId"] = network.Id;
+				} else if (network.Name == "slave_network") {
+					workers["slave"]["networkId"] = network.Id;
 				}
-				else if (network.Name == "slave_network") {
-					workers["slave"]["networkId"] = network.Id
-				}
-			})
-		})
-	})	
+			});
+		});
+	});
 }
 
 function getNextIndex() {
-	var i=1;
-	while(i<=workerCount.length) {
-		if (i!=workerCount[i-1]) {
-			workerCount[i-1] = i
-			break
+	var i = 1;
+	while (i <= workerCount.length) {
+		if (i != workerCount[i - 1]) {
+			workerCount[i - 1] = i;
+			break;
 		}
-		i+=1
+		i += 1;
 	}
-	if (i == workerCount.length+1) {
-		workerCount.push(i)
+	if (i == workerCount.length + 1) {
+		workerCount.push(i);
 	}
-	return i
+	return i;
 }
 function createWorker(callback) {
-	workerIndex = getNextIndex()		
-	replicateContainer("mongodb_master","mongodb_clone_"+workerIndex,"mongodb_slave_"+workerIndex,(err,newSlaveId) => {
-		if (err) {
-			console.log(err)
-			return callback(err)
-		}
-		docker.createNetwork({
-			"Name": "slave_network_"+workerIndex,
-			"Driver": "bridge"
-		}, (err, network) => {
-			if(err){
-				console.log(err)
-				return callback(err)
+	workerIndex = getNextIndex();
+	replicateContainer(
+		"mongodb_master",
+		"mongodb_clone_" + workerIndex,
+		"mongodb_slave_" + workerIndex,
+		(err, newSlaveId) => {
+			if (err) {
+				console.log(err);
+				return callback(err);
 			}
-			console.log(network)
-			console.log("Network Created\n")
-			network.connect({Container: newSlaveId}, (err, data)=>{
-				if(err) {
-					console.log("Failed to attach mongodb to slave network...")
-					console.log(err)
-					return callback(err)
-				}
-				docker.run("dbworker_slave",[],undefined,{name: "dbworker_slave_"+workerIndex, Env: ["ROLE=slave","DB_HOST="], 
-				HostConfig: { AutoRemove: true}}
-				,(err,data,container) => {
-					if(err) {
-						console.log(err)
-						return callback(err)
+			docker.createNetwork(
+				{
+					Name: "slave_network_" + workerIndex,
+					Driver: "bridge",
+				},
+				(err, network) => {
+					if (err) {
+						console.log(err);
+						return callback(err);
 					}
-					network.connect({Container: container.id}, (err, data)=>{
-						if(err) {
-							console.log("Failed to attach slave to slave network...")
-							console.log(err)
-							return callback(err)
+					console.log(network);
+					console.log("Network Created\n");
+					network.connect({ Container: newSlaveId }, (err, data) => {
+						if (err) {
+							console.log(
+								"Failed to attach mongodb to slave network..."
+							);
+							console.log(err);
+							return callback(err);
 						}
-						docker.listNetworks((err,networks)=>{
-							if (err) {
-								console.log("failed to list networks")
-								process.exit(0)
-							}
-							networks.forEach((network)=>{
-								if(network.Name == "zookeeper_network" || network.Name == "rabbitmq_network" ){
-									net = docker.getNetwork(network.Id)
-									net.connect(container.id)
+						docker.run(
+							"dbworker_slave",
+							[],
+							undefined,
+							{
+								name: "dbworker_slave_" + workerIndex,
+								Env: ["ROLE=slave", "DB_HOST="],
+								HostConfig: { AutoRemove: true },
+							},
+							(err, data, container) => {
+								if (err) {
+									console.log(err);
+									return callback(err);
 								}
-							})
-							workers[workerIndex] = {
-							"serverId": container.id,
-							"mongodbId": newSlaveId,
-							"networkId": network.id
+								network.connect(
+									{ Container: container.id },
+									(err, data) => {
+										if (err) {
+											console.log(
+												"Failed to attach slave to slave network..."
+											);
+											console.log(err);
+											return callback(err);
+										}
+										docker.listNetworks((err, networks) => {
+											if (err) {
+												console.log(
+													"failed to list networks"
+												);
+												process.exit(0);
+											}
+											networks.forEach((network) => {
+												if (
+													network.Name ==
+														"zookeeper_network" ||
+													network.Name ==
+														"rabbitmq_network"
+												) {
+													net = docker.getNetwork(
+														network.Id
+													);
+													net.connect(container.id);
+												}
+											});
+											workers[workerIndex] = {
+												serverId: container.id,
+												mongodbId: newSlaveId,
+												networkId: network.id,
+											};
+											return callback(
+												null,
+												"New worker created successfully..."
+											);
+										});
+									}
+								);
 							}
-							return callback(null,"New worker created successfully...")	
-						})		
-					})	
-				})
-			})
-		
-		})
-		
-	})
+						);
+					});
+				}
+			);
+		}
+	);
 }
 
-
-function replicateContainer(containerName,newImageName,newContainerName,callback) {		
+function replicateContainer(
+	containerName,
+	newImageName,
+	newContainerName,
+	callback
+) {
 	docker.listContainers((err, containers) => {
-		if(err) {
-			console.log("Failed to List Containers\n")
-			console.log(err)
-			return callback(err)
+		if (err) {
+			console.log("Failed to List Containers\n");
+			console.log(err);
+			return callback(err);
 		}
-		containers.forEach( (container) => {
-			container.Names.forEach((name)=>{
-				if (name == "/"+containerName) {
-					console.log(container.Id)
-					var newContainer = docker.getContainer(container.Id)
+		containers.forEach((container) => {
+			container.Names.forEach((name) => {
+				if (name == "/" + containerName) {
+					console.log(container.Id);
+					var newContainer = docker.getContainer(container.Id);
 					//console.log(c)
-					newContainer.commit({repo:newImageName},(err,res)=>{
-						if(err) {
-							console.log(err)
-							return callback(err)
+					newContainer.commit({ repo: newImageName }, (err, res) => {
+						if (err) {
+							console.log(err);
+							return callback(err);
 						}
-						console.log(res)
-						docker.run(newImageName,[],undefined,{ name: newContainerName, 
-						HostConfig: {Hostname: "mongodb", AutoRemove: true, NetworkMode: 'rabbitmq_network'}}
-							,(err,data,container) => {
-								if(err) {
-								console.log(err)
-								return callback(err)
+						console.log(res);
+						docker.run(
+							newImageName,
+							[],
+							undefined,
+							{
+								name: newContainerName,
+								HostConfig: {
+									Hostname: "mongodb",
+									AutoRemove: true,
+									NetworkMode: "rabbitmq_network",
+								},
+							},
+							(err, data, container) => {
+								if (err) {
+									console.log(err);
+									return callback(err);
+								}
+								console.log(data);
+								return callback(null, container.id);
 							}
-							console.log(data)
-							return callback(null,container.id)
-							
-						})
-					
-					})
+						);
+					});
 				}
-			})
-		})
-	})
-}
-
-function deleteWorker(workerIndex,callback) {
-	var container = docker.getContainer(workers[workerIndex].serverId)
-	container.stop()	
-	container.remove((err, data) => {
-		if(err) {
-			console.log(err)
-			return callback(err)
-		}
-		console.log ("worker container Deleted successfully")
-		container = docker.getContainer(workers[workerIndex].mongodbId)
-		var mongoImage = docker.getImage()
-		container.stop()
-		container.remove((err, data) => {
-			if(err) {
-				return callback(err)
-			}
-			console.log ("mongodb container Deleted successfully")
-			image.remove((err)=>{
-				if (err) {
-					console.log("Failed to remove image")
-					return
-				}
-				return
-			})
-			var network = docker.getNetwork(workers[workerIndex].networkId)
-			network.remove((err, data) => {
-				if(err) {
-					return callback(err)
-				}
-  				console.log(data)
-  				console.log ("Slave Deleted successfully")
-  				delete workers[workerIndex]
-  				workerCount[workerIndex-1] = 0
-				return callback(null,data)
-  			})
+			});
 		});
 	});
-
 }
 
-exports.updateRequests = (req,res,next) => {
-	reqRate = reqRate + 1
-	next()
+function deleteWorker(workerIndex, callback) {
+	var container = docker.getContainer(workers[workerIndex].serverId);
+	container.stop();
+	container.remove((err, data) => {
+		if (err) {
+			console.log(err);
+			return callback(err);
+		}
+		console.log("worker container Deleted successfully");
+		container = docker.getContainer(workers[workerIndex].mongodbId);
+		var mongoImage = docker.getImage();
+		container.stop();
+		container.remove((err, data) => {
+			if (err) {
+				return callback(err);
+			}
+			console.log("mongodb container Deleted successfully");
+			image.remove((err) => {
+				if (err) {
+					console.log("Failed to remove image");
+					return;
+				}
+				return;
+			});
+			var network = docker.getNetwork(workers[workerIndex].networkId);
+			network.remove((err, data) => {
+				if (err) {
+					return callback(err);
+				}
+				console.log(data);
+				console.log("Slave Deleted successfully");
+				delete workers[workerIndex];
+				workerCount[workerIndex - 1] = 0;
+				return callback(null, data);
+			});
+		});
+	});
 }
+
+exports.updateRequests = (req, res, next) => {
+	reqRate = reqRate + 1;
+	next();
+};
 
 function updateWorkers() {
-	
-	var newWorkers = Math.floor(reqRate/20)
-	reqRate = 0
-	console.log("Scale Up needed : "+newWorkers)
-			
+	var newWorkers = Math.floor(reqRate / 20);
+	reqRate = 0;
+	console.log("Scale Up needed : " + newWorkers);
+
 	if (newWorkers > workerCount.length) {
-		diff = newWorkers - workerCount.length
+		diff = newWorkers - workerCount.length;
 		while (diff) {
-			createWorker((err,retVal)=>{
-				if(err){
-					console.log(err)
-					process.exit(0)
+			createWorker((err, retVal) => {
+				if (err) {
+					console.log(err);
+					process.exit(0);
 				}
-				return
+				return;
 			});
-			diff = diff - 1
+			diff = diff - 1;
 		}
 	} else {
-		diff = workerCount.length - newWorkers
+		diff = workerCount.length - newWorkers;
 		while (diff) {
-			deleteWorker(diff,(err,retVal)=>{
-				console.log(err)
-				process.exit(0)
+			deleteWorker(diff, (err, retVal) => {
+				console.log(err);
+				process.exit(0);
 			});
-			diff = diff - 1
+			diff = diff - 1;
 		}
-	}	
+	}
 }
 
-initialiseWorkers()
-setInterval(updateWorkers,1000*120)
+exports.crashMaster = (req, res, next) => {
+	if (workers["master"] == undefined) res.status(404).send();
 
+	docker.getContainer(workers["master"]["serverId"]).stop();
+	docker.getContainer(workers["master"]["dbId"]).stop();
+	res.status(200).send({});
+
+	return;
+};
+
+exports.crashSlave = (req, res, next) => {
+	if (workers["slave"] == undefined) res.status(404).send();
+
+	docker.getContainer(workers["slave"]["serverId"]).stop();
+	docker.getContainer(workers["slave"]["dbId"]).stop();
+	res.status(200).send({});
+
+	return;
+};
+
+exports.workerList = (req, res, next) => {
+	docker.listContainers(function (err, containers) {
+		if (err) {
+			return res.status(500).send(err);
+		}
+
+		let IDs = [];
+		containers.forEach(function (containerInfo) {
+			docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+				console.log(data["State"]["Pid"]);
+				if (data["Name"].startsWith("dbworker"))
+					IDs.push(data["State"]["Pid"]);
+			});
+		});
+
+		IDs.sort();
+		res.status(200).send(IDs.sort());
+	});
+
+	return;
+};
+
+initialiseWorkers();
+setInterval(updateWorkers, 1000 * 120);

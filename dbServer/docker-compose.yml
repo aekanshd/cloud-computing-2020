@@ -6,8 +6,8 @@ services:
         image: dbworker:latest
         container_name: master
         restart: always
-        networks: 
-          - rabbitmq_network
+        networks:
+            - rabbitmq_network
         depends_on:
             - mongodb
         environment:
@@ -20,4 +20,4 @@ services:
 
 networks:
     rabbitmq_network:
-        external: true 
+        external: true

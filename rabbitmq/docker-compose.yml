@@ -1,19 +1,19 @@
-version: '3.5'
+version: "3.5"
 
 services:
-  rabbitmq:
-#    image: 'bitnami/rabbitmq:latest'
-    build: .
-    networks: 
-      - rabbitmq_network
-    ports:
-      - '4369:4369'
-      - '5672:5672'
-      - '25672:25672'
-      - '15672:15672'
+    rabbitmq:
+        #    image: 'bitnami/rabbitmq:latest'
+        build: .
+        networks:
+            - rabbitmq_network
+        ports:
+            - "4369:4369"
+            - "5672:5672"
+            - "25672:25672"
+            - "15672:15672"
 networks:
-  rabbitmq_network:
-    name: rabbitmq_network
+    rabbitmq_network:
+        name: rabbitmq_network
 #    driver: rabbit-driver
 #    volumes:
 #      - 'rabbitmq_data:/bitnami'

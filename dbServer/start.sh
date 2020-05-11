@@ -1,5 +1,5 @@
-#!/bin/sh
+#!/bin/bash
 
-(node load_locations.js;\
-node zooClient.js & \
-node controllers/mainController.js )
+node load_locations.js
+node zooClient.js
+node controllers/mainController.js
