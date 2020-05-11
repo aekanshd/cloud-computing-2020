@@ -6,6 +6,7 @@ const request = require("request-promise");
 var reqRate = 0;
 var workerCount = [];
 var workers = {};
+var zookeeper = require("node-zookeeper-client");
 
 function initialiseWorkers() {
 	docker.listContainers((err, containers) => {
@@ -104,7 +105,7 @@ function createWorker(callback) {
 							undefined,
 							{
 								name: "dbworker_slave_" + workerIndex,
-								Env: ["ROLE=slave", "DB_HOST="],
+								Env: ["ROLE=slave", "DB_HOST=mongodb_slave_"+workerIndex],
 								HostConfig: { AutoRemove: true },
 							},
 							(err, data, container) => {
@@ -132,9 +133,9 @@ function createWorker(callback) {
 											networks.forEach((network) => {
 												if (
 													network.Name ==
-														"zookeeper_network" ||
+													"zookeeper_network" ||
 													network.Name ==
-														"rabbitmq_network"
+													"rabbitmq_network"
 												) {
 													net = docker.getNetwork(
 														network.Id
@@ -194,7 +195,7 @@ function replicateContainer(
 							{
 								name: newContainerName,
 								HostConfig: {
-									Hostname: "mongodb",
+									Hostname: newContainerName,
 									AutoRemove: true,
 									NetworkMode: "rabbitmq_network",
 								},
@@ -291,45 +292,92 @@ function updateWorkers() {
 exports.crashMaster = (req, res, next) => {
 	if (workers["master"] == undefined) res.status(404).send();
 
-	docker.getContainer(workers["master"]["serverId"]).stop();
-	docker.getContainer(workers["master"]["dbId"]).stop();
+	for (var key in workers) {
+		if (workers[key].serverId == workers["master"]["serverId"]) {
+			deleteWorker(key, (err, data) => {
+				if (err) {
+					console.log(err);
+					res.status(500).send({})
+				}
+				res.status(200).send({});
+			})
+		}
+	}
+
+	zookeeper.getChildren('/election', function (error, children, stats) {
+		if (error) {
+			console.log(error.stack);
+			return;
+		}
+		let electionNodes = children.sort();
+		let leader = electionNodes[0];
+		console.log('Children are: %j.', children);
+
+		zookeeper.getData(
+			'/election/' + leader,
+			function (error, data, stat) {
+				if (error) {
+					console.log(error.stack);
+					return;
+				}
+				console.log('Got data: %s', data.toString('utf8'));
+				CID = data.toString('utf8')
+				workers["master"]["serverId"] = CID
+
+				docker.getContainer(CID).inspect((err, data) => {
+					docker.getContainer(data["NetworkSettings"]["Networks"]["bridge"]["NetworkID"]).inspect((err_1, data_1) => {
+						data_1["Containers"].forEach((containerID) => {
+							if (containerID != CID) {
+								workers["master"]["dbId"] = containerID
+							}
+						})
+					})
+
+				})
+			}
+		);
+
+	});
+
+	createWorker(() => {
+		console.log("Worker Created.");
+	})
+
+	// docker.getContainer(workers["master"]["serverId"]).stop();
+	// docker.getContainer(workers["master"]["dbId"]).stop();
 	res.status(200).send({});
 
 	return;
 };
 
 exports.crashSlave = (req, res, next) => {
-	var maxPid = 0
-	var cId = "" 
-	docker.listContainers(function (err, containers) {
-		if (err) {
-			return res.status(500).send(err);
-		}
-		containers.forEach(function (containerInfo) {
-			docker.getContainer(containerInfo.Id).inspect(function (err, data) {
-				if (data["Name"].startsWith("dbworker")){
-					console.log(data["State"]["Pid"]);
-					if (data["State"]["Pid"] > maxPid) {
-						maxPid(data["State"]["Pid"])
-						cId = containerInfo.Id
-					}
+
+	let maxPID = Number;
+	let CID = String;
+
+	docker.listContainers((err, containers) => {
+		if (err) return res.status(500).send(err)
+		containers.forEach((containerInfo) => {
+			docker.getContainer(containerInfo).inspect((err, data) => {
+				console.log(data["State"]["Pid"]);
+				if (data["Name"] == "/dbworker_slave" && data["State"]["Pid"] > maxPID) {
+					maxPID = data["State"]["Pid"]
+					CID = containerInfo.Id
 				}
-			});
-		});
+			})
+		})
 		for (var key in workers) {
-			if (workers[key].serverId == cId ) {
-				deleteWorker(key,(err,data) => {
-					if(err) {
-						console.log(err)
-						res.status(500).send({});
+			if (workers[key].serverId == CID) {
+				deleteWorker(key, (err, data) => {
+					if (err) {
+						console.log(err);
+						res.status(500).send({})
 					}
 					res.status(200).send({});
 				})
 			}
-		}
-			
+		}		
 	});
-
 	return;
 };
 
@@ -343,11 +391,10 @@ exports.workerList = (req, res, next) => {
 		containers.forEach(function (containerInfo) {
 			docker.getContainer(containerInfo.Id).inspect(function (err, data) {
 				console.log(data["State"]["Pid"]);
-				if (data["Name"].startsWith("dbworker"))
+				if (data["Name"].startsWith("/dbworker"))
 					IDs.push(data["State"]["Pid"]);
 			});
 		});
-
 		IDs.sort();
 		res.status(200).send(IDs.sort());
 	});

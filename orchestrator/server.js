@@ -4,6 +4,18 @@ const fs = require("fs");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 
+var os = require("os");
+var hostname = os.hostname();
+const Docker = require("dockerode");
+const docker = new Docker();
+
+console.log("Container ID:", hostname)
+
+docker.getContainer(hostname).inspect(function (err, data) {
+  console.log("Container PID:", data["State"]["Pid"]);
+});
+
+
 /*--------------------
   Initialize express
   --------------------*/

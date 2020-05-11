@@ -17,6 +17,8 @@ services:
             - TEAM_NAME=CC_0276_0652_0706_1808
             - ROLE=master
             - DB_HOST=mongodb_master
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
     mongodb_master:
         image: mongo
         container_name: mongodb_master

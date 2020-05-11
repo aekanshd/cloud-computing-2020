@@ -11,4 +11,4 @@ RUN npm install
 COPY . .
 #Expose port and start application
 EXPOSE 8000
-CMD ["start.sh"]
+CMD ["node", "./zooClient.js"]
