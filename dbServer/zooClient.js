@@ -3,6 +3,11 @@
 // Import Zookeeper
 var zookeeper = require("node-zookeeper-client");
 const { spawn } = require("child_process");
+var os = require("os");
+var hostname = os.hostname();
+const Docker = require("dockerode");
+const docker = new Docker();
+
 CreateMode = zookeeper.CreateMode;
 Event = zookeeper.Event;
 
@@ -13,14 +18,23 @@ state = {
 	liveNodes: Array,
 	electionNodes: Array,
 	leader: null,
+	cid: null,
+	pid: null
 };
+
+console.log("Container ID:", hostname)
+
+docker.getContainer(hostname).inspect(function (err, data) {
+	console.log("Container PID:", data["State"]["Pid"]);
+	state.pid = data["State"]["Pid"];
+});
 
 // Connect to server at localhost and initiate client
 var client = zookeeper.createClient("zoo:2181", { retries: 3 });
 
 // Function to create a path
 let createPath = (client, path, mode = CreateMode.PERSISTENT) => {
-	client.create(path, mode, (error) => {
+	client.create(path, Buffer.from(state.cid), mode, (error) => {
 		if (error)
 			console.log("Failed to create node: %s due to: %s.", path, error);
 		else console.log("Node: %s is successfully created.", path);
