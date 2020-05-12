@@ -4,7 +4,7 @@ const fs = require("fs");
 var async = require("async");
 
 const dbConfig = {
-	HOST: process.env.DB_SERVER || "localhost",
+	HOST: process.env.DB_HOST || "localhost",
 	USER: process.env.DB_USERNAME || "root",
 	PASSWORD: process.env.DB_PASSWORD || "",
 	DB: process.env.DB_DATABASE || "rideshare",
@@ -42,7 +42,7 @@ if (role == "master") {
 	console.log("Master");
 	master((err, res) => {
 		if (err) {
-			throw error;
+			throw err;
 		}
 		console.log(res);
 	});
@@ -126,7 +126,7 @@ consumeReadQueue = (msg) => {
 			} else {
 				var responseQueue = "response"
 				channel.assertQueue(responseQueue, {
-					durable: false
+					durable: true
 				})
 				channel.sendToQueue(responseQueue, Buffer.from(res.toString()))
 			}
@@ -200,14 +200,14 @@ function master(callback) {
 				(msg) => {
 					query = msg.content.toString();
 					console.log(" [x] Received %s", query);
-					readDb(JSON.parse(query), (err, res) => {
+					writeDb(JSON.parse(query), (err, res) => {
 						if (err) {
 							console.log(err);
 							return callback(err);
 						} else {
 							var responseQueue = "response";
 							channel.assertQueue(responseQueue, {
-								durable: false,
+								durable: true,
 							});
 							channel.sendToQueue(
 								responseQueue,
@@ -217,7 +217,7 @@ function master(callback) {
 							var syncData = query;
 							var exchange = "syncExchange";
 							channel.assertExchange(exchange, "fanout", {
-								durable: false,
+								durable: true,
 							});
 							console.log(
 								"Syncing Slaves with rquest : ",
@@ -243,7 +243,7 @@ function master(callback) {
 
 readDb = (req, callback) => {
 	console.log("Reading Database..");
-	mongoClient.connect(dbConfig.HOST, (err, db) => {
+	mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", (err, db) => {
 		if (err) {
 			console.error(err.message);
 			return callback(err);
@@ -273,7 +273,7 @@ writeDb = (req, callback) => {
 	if (req.method === "POST") {
 		console.log("Recieved DB write POST request..");
 		if (req.body.table === "users") {
-			mongoClient.connect(dbConfig.HOST, function (err, db) {
+			mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", function (err, db) {
 				if (err) {
 					console.log(err);
 					return callback(err);
@@ -299,7 +299,7 @@ writeDb = (req, callback) => {
 			});
 		} else if (req.body.table === "rides") {
 			if (req.body.update) {
-				mongoClient.connect(dbConfig.HOST, function (err, db) {
+				mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", function (err, db) {
 					dbo = db.db(dbConfig.DB);
 					if (err) {
 						console.log(err);
@@ -323,7 +323,7 @@ writeDb = (req, callback) => {
 					);
 				});
 			} else {
-				mongoClient.connect(dbConfig.HOST, function (err, db) {
+				mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", function (err, db) {
 					dbo = db.db(dbConfig.DB);
 					if (err) {
 						console.log(err);
@@ -357,7 +357,7 @@ writeDb = (req, callback) => {
 	} else if (req.method === "DELETE") {
 		console.log("Recieved DB write DELETE request..");
 
-		mongoClient.connect(dbConfig.HOST, function (err, db) {
+		mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", function (err, db) {
 			dbo = db.db(dbConfig.DB);
 			if (err) {
 				console.log(err);

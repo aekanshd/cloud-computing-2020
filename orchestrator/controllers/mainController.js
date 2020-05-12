@@ -7,7 +7,7 @@ const Docker = require("dockerode");
 const request = require("request-promise");
 
 rabbit = {
-	hostname: "amqp://localhost/",
+	hostname: "amqp://rabbitmq:5672/",
 	virtualHost: "rideshare",
 	user: "ravi",
 	password: "ravi",
@@ -65,11 +65,7 @@ exports.writeDb = (req, res, next) => {
 				return res.status(500).send(err);
 			}
 			res.status(200).send();
-			channel.assertExchange(exchange, "fanout", {
-				durable: false,
-			});
-			channel.publish(exchange, "", Buffer.from(msg));
-			console.log(" [x] Sent %s", msg);
+			
 		});
 	} else {
 		res.status(400).send("Method Not Supported");
@@ -125,22 +121,22 @@ exports.clearDb = (req, res, next) => {
 //--------------------------------------------
 
 sendData = (req, callback) => {
-	amqp.connect(rabbitServer, opt, function (error0, connection) {
-		if (error0) {
-			console.error(error0);
-			return callback(error);
+	amqp.connect(rabbitServer, opt, function (err, connection) {
+		if (err) {
+			console.error(err);
+			return callback(err);
 		}
-		connection.createChannel(function (error1, channel) {
-			if (error1) {
-				console.error(error0);
-				return callback(error);
+		connection.createChannel(function (err, channel) {
+			if (err) {
+				console.error(err);
+				return callback(err);
 			}
 			//var queue = 'write';
 			queue = req.queue;
 			channel.assertQueue(queue, {
-				durable: false,
+				durable: true,
 			});
-			channel.sendToQueue(queue, Buffer.from(JSON.stringify(req)));
+			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})));
 			return callback(null, {});
 		});
 		setTimeout(function () {
@@ -164,7 +160,7 @@ readData = (req, callback) => {
 			//var queue = 'write';
 			queue = req.queue;
 			channel.assertQueue(queue, {
-				durable: false,
+				durable: true,
 			});
 			channel.consume(
 				queue,

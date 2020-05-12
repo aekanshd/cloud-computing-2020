@@ -71,7 +71,7 @@ setLeaderWatch = (client) => {
 
 				server.on("close", (code) => {
 					console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
-					// process.exit(1);
+					process.exit(1);
 				});
 
 				server.on("error", (error) => {
@@ -117,7 +117,7 @@ client.once("connected", () => {
 
 	server.on("close", (code) => {
 		console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
-		// process.exit(1);
+		//process.exit(1);
 	});
 
 	server.on("error", (error) => {
