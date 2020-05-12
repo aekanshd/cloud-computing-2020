@@ -5,7 +5,6 @@ services:
         build: .
         image: dbworker_master:latest
         container_name: dbworker_master
-        #    command: npm start
         restart: always
         depends_on:
             - mongodb_master

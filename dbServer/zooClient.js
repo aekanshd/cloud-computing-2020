@@ -34,7 +34,7 @@ var client = zookeeper.createClient("zoo:2181", { retries: 3 });
 
 // Function to create a path
 let createPath = (client, path, mode = CreateMode.PERSISTENT) => {
-	client.create(path, Buffer.from(state.cid), mode, (error) => {
+	client.create(path, Buffer.from(hostname), mode, (error) => {
 		if (error)
 			console.log("Failed to create node: %s due to: %s.", path, error);
 		else console.log("Node: %s is successfully created.", path);

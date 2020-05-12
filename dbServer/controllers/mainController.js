@@ -118,7 +118,7 @@ consumeReadQueue = (msg) => {
 	if (msg != null) {
 		query = msg.content.toString();
 		console.log(" [x] Received %s", query);
-		/*
+		
 		readDb(JSON.parse(query), (err, res) => {
 			if (err) {
 				console.log(err)
@@ -130,7 +130,7 @@ consumeReadQueue = (msg) => {
 				})
 				channel.sendToQueue(responseQueue, Buffer.from(res.toString()))
 			}
-		})*/
+		})
 	}
 };
 
@@ -155,7 +155,7 @@ syncSlave = (channel, exchange, callback) => {
 				function (msg) {
 					if (msg.content) {
 						console.log(" [x] message %s", msg.content.toString());
-						/*data = msg.content.toString()
+						data = msg.content.toString()
 				console.log(" [x] Recieved %s", data);
 				writeDb(JSON.parse(data), (err, res) => {
 					if (err) {
@@ -163,7 +163,7 @@ syncSlave = (channel, exchange, callback) => {
 						return callback(err)
 					}
 					return callback(null, res)
-				})*/
+				})
 					}
 				},
 				{
