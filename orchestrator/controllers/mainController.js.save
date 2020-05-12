@@ -136,7 +136,6 @@ sendData = (req, callback) => {
 				durable: true,
 			});
 			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})));
-			connection.close()
 			return callback(null, {});
 		});
 	});
