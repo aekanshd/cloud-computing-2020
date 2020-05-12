@@ -34,7 +34,7 @@ var client = zookeeper.createClient("zoo:2181", { retries: 3 });
 
 // Function to create a path
 let createPath = (client, path, mode = CreateMode.PERSISTENT) => {
-	client.create(path, Buffer.from(state.cid), mode, (error) => {
+	client.create(path, Buffer.from(hostname), mode, (error) => {
 		if (error)
 			console.log("Failed to create node: %s due to: %s.", path, error);
 		else console.log("Node: %s is successfully created.", path);
@@ -70,8 +70,8 @@ setLeaderWatch = (client) => {
 				]);
 
 				server.on("close", (code) => {
-					console.log(`Child process exited with code ${code}`);
-					process.exit(1);
+					console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
+					// process.exit(1);
 				});
 
 				server.on("error", (error) => {
@@ -93,8 +93,10 @@ setLeaderWatch = (client) => {
 };
 
 client.once("connected", () => {
-	console.log("Connected to the server.");
+	console.log("Connected to the Zookeeper server.");
 	state.id = client.getSessionId().toString("hex");
+
+	console.log("Creating child ephemeral node under Zookeeper for PID %s", state.pid);
 
 	createPath(
 		client,
@@ -114,8 +116,8 @@ client.once("connected", () => {
 	const server = spawn("node", ["./controllers/mainController.js"]);
 
 	server.on("close", (code) => {
-		console.log(`Child process exited with code ${code}`);
-		process.exit(1);
+		console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
+		// process.exit(1);
 	});
 
 	server.on("error", (error) => {
