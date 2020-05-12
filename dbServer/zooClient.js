@@ -70,8 +70,8 @@ setLeaderWatch = (client) => {
 				]);
 
 				server.on("close", (code) => {
-					console.log(`Child process exited with code ${code}`);
-					process.exit(1);
+					console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
+					// process.exit(1);
 				});
 
 				server.on("error", (error) => {
@@ -93,8 +93,10 @@ setLeaderWatch = (client) => {
 };
 
 client.once("connected", () => {
-	console.log("Connected to the server.");
+	console.log("Connected to the Zookeeper server.");
 	state.id = client.getSessionId().toString("hex");
+
+	console.log("Creating child ephemeral node under Zookeeper for PID %s", state.pid);
 
 	createPath(
 		client,
@@ -114,8 +116,8 @@ client.once("connected", () => {
 	const server = spawn("node", ["./controllers/mainController.js"]);
 
 	server.on("close", (code) => {
-		console.log(`Child process exited with code ${code}`);
-		process.exit(1);
+		console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
+		// process.exit(1);
 	});
 
 	server.on("error", (error) => {
