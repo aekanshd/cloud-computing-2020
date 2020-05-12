@@ -96,23 +96,23 @@ exports.readDb = (req, res, next) => {
 exports.clearDb = (req, res, next) => {
 	console.log("Clear DB");
 	if (req.method === "POST") {
+		flag = 0
 		var tables = ["rides", "users"];
 		tables.forEach((table) => {
 			let db_req = { table: table, where: {} };
-			const options = {
-				method: "DELETE",
-				body: db_req,
-				json: true,
-			};
-			req.body = options;
+			req.method = "DELETE";
+			req.body = db_req;
 			req.queue = "write";
 			sendData(req, (err, retval) => {
 				if (err) {
+					flag = 1;
 					return res.status(500).send(err);
 				}
-				res.status(200).send(retval);
+				return
 			});
+			
 		});
+		if(flag ==0) {return res.status(200).send({});}
 	} else {
 		return res.status(400).send("Method Not Supported");
 	}
