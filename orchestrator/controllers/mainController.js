@@ -125,18 +125,21 @@ sendData = (req, callback) => {
 			console.error(err);
 			return callback(err);
 		}
+		console.log("Connected to rabbit..")
 		connection.createChannel(function (err, channel) {
 			if (err) {
 				console.error(err);
 				return callback(err);
 			}
-			//var queue = 'write';
+			console.log("Created Channel for "+req.queue+" queue..")
 			queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
-			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})));
-			connection.close()
+			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})),
+			{persistent:false}
+			);
+			console.log("Message sent...")
 			return callback(null, {});
 		});
 	});
@@ -146,7 +149,7 @@ readData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {
 			console.error(error0);
-			return callback(error);
+			return callback(error0);
 		}
 		connection.createChannel(function (error1, channel) {
 			if (error1) {
@@ -163,8 +166,7 @@ readData = (req, callback) => {
 				(msg) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
-					connection.close()
-					return callback(null, JSON.parse(data));
+					return callback(null,JSON.parse(data));
 				},
 				{
 					noAck: true,
