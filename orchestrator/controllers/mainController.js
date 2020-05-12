@@ -64,7 +64,7 @@ exports.writeDb = (req, res, next) => {
 			if (err) {
 				return res.status(500).send(err);
 			}
-			res.status(200).send();
+			 return res.status(200).send();
 			
 		});
 	} else {
@@ -73,7 +73,7 @@ exports.writeDb = (req, res, next) => {
 };
 
 exports.readDb = (req, res, next) => {
-	console.log("DB Write");
+	console.log("DB Read");
 	if (req.method === "POST") {
 		req.queue = "read";
 		sendData(req, (err, retval) => {
@@ -85,7 +85,7 @@ exports.readDb = (req, res, next) => {
 				if (err) {
 					return res.status(500).send(err);
 				}
-				res.status(200).send(retval);
+				return res.status(200).send(retval);
 			});
 		});
 	} else {
@@ -114,7 +114,7 @@ exports.clearDb = (req, res, next) => {
 			});
 		});
 	} else {
-		res.status(400).send("Method Not Supported");
+		return res.status(400).send("Method Not Supported");
 	}
 };
 
@@ -126,23 +126,23 @@ sendData = (req, callback) => {
 			console.error(err);
 			return callback(err);
 		}
+		console.log("Connected to rabbit..")
 		connection.createChannel(function (err, channel) {
 			if (err) {
 				console.error(err);
 				return callback(err);
 			}
-			//var queue = 'write';
+			console.log("Created Channel for "+req.queue+" queue..")
 			queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
-			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})));
+			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})),
+			{persistent:false}
+			);
+			console.log("Message sent...")
 			return callback(null, {});
 		});
-		setTimeout(function () {
-			connection.close();
-			process.exit(0);
-		}, 500);
 	});
 };
 
@@ -150,12 +150,12 @@ readData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {
 			console.error(error0);
-			return callback(error);
+			return callback(error0);
 		}
 		connection.createChannel(function (error1, channel) {
 			if (error1) {
-				console.error(error0);
-				return callback(error);
+				console.error(error1);
+				return callback(error1);
 			}
 			//var queue = 'write';
 			queue = req.queue;
@@ -167,16 +167,12 @@ readData = (req, callback) => {
 				(msg) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
-					return callback(null, JSON.parse(data));
+					return callback(null,JSON.parse(data));
 				},
 				{
 					noAck: true,
 				}
 			);
 		});
-		setTimeout(function () {
-			connection.close();
-			process.exit(0);
-		}, 500);
 	});
 };

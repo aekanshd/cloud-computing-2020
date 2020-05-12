@@ -61,19 +61,16 @@ function slave(callback) {
 		if (err) {
 			return callback(err);
 		}
-		process.once("SIGINT", function () {
-			connection.close();
-		});
 		connection.createChannel((err, readChannel) => {
 			if (err) {
 				return callback(err);
 			}
-			readChannel.prefetch(1);
+			//readChannel.prefetch(1);
 			connection.createChannel((err, syncChannel) => {
 				if (err) {
 					return callback(err);
 				}
-				syncChannel.prefetch(1);
+				//syncChannel.prefetch(1);
 				//Read queue
 				var readQueue = "read";
 				readChannel.assertQueue(readQueue, {
@@ -91,8 +88,8 @@ function slave(callback) {
 					[
 						() => {
 							readChannel.consume(readQueue, (msg) => {
-								console.log(msg.content.toString());
-								consumeReadQueue(msg);
+								console.log("recieved data..");
+								consumeReadQueue(msg,connection);
 							});
 						},
 						() => {
@@ -113,7 +110,7 @@ function slave(callback) {
 	});
 }
 
-consumeReadQueue = (msg) => {
+consumeReadQueue = (msg,connection) => {
 	//console.log(channel)
 	if (msg != null) {
 		query = msg.content.toString();
@@ -125,10 +122,15 @@ consumeReadQueue = (msg) => {
 				return
 			} else {
 				var responseQueue = "response"
-				channel.assertQueue(responseQueue, {
-					durable: true
+				connection.createChannel((err, channel) => {
+					if (err) {
+						return callback(err);
+					}
+					channel.assertQueue(responseQueue, {
+						durable: true
+					})
+					channel.sendToQueue(responseQueue, Buffer.from(JSON.stringify(res)),{persistent:false})
 				})
-				channel.sendToQueue(responseQueue, Buffer.from(res.toString()))
 			}
 		})
 	}
@@ -211,7 +213,8 @@ function master(callback) {
 							});
 							channel.sendToQueue(
 								responseQueue,
-								Buffer.from(res.toString())
+								Buffer.from(res.toString()),
+								{persistent:false}
 							);
 							//Sync queue
 							var syncData = query;
@@ -226,7 +229,8 @@ function master(callback) {
 							channel.publish(
 								exchange,
 								"",
-								Buffer.from(syncData)
+								Buffer.from(syncData),
+								{persistent:false}
 							);
 							console.log(" [x] Sent %s", syncData);
 							return callback(null, res);
@@ -249,7 +253,7 @@ readDb = (req, callback) => {
 			return callback(err);
 		}
 		dbo = db.db(dbConfig.DB);
-		console.log(req.body.where);
+		console.log("Query Condition : "+req.body.where);
 		var qry = req.body.where;
 		if (req.body.where._id) {
 			qry = { _id: new objectId(req.body.where._id) };
