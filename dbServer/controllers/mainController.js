@@ -65,12 +65,12 @@ function slave(callback) {
 			if (err) {
 				return callback(err);
 			}
-			//readChannel.prefetch(1);
+			readChannel.prefetch(1);
 			connection.createChannel((err, syncChannel) => {
 				if (err) {
 					return callback(err);
 				}
-				//syncChannel.prefetch(1);
+				syncChannel.prefetch(1);
 				//Read queue
 				var readQueue = "read";
 				readChannel.assertQueue(readQueue, {
@@ -207,15 +207,6 @@ function master(callback) {
 							console.log(err);
 							return callback(err);
 						} else {
-							var responseQueue = "response";
-							channel.assertQueue(responseQueue, {
-								durable: true,
-							});
-							channel.sendToQueue(
-								responseQueue,
-								Buffer.from(res.toString()),
-								{persistent:false}
-							);
 							//Sync queue
 							var syncData = query;
 							var exchange = "syncExchange";
@@ -354,7 +345,30 @@ writeDb = (req, callback) => {
 					});
 				});
 			}
-		} else {
+		}
+		else if (req.body.table === "rides_meta" || req.body.table === "users_meta") {
+			console.log("Request Count Update...")
+			mongoClient.connect("mongodb://"+dbConfig.HOST+":27017", function (err, db) {
+				if (err) {
+					console.log(err);
+					return callback(err);
+				}
+				dbo = db.db(dbConfig.DB);
+				console.log("Connected to DB..");
+				var qry = req.body.qry
+				var update = req.body.update
+				dbo.collection(req.body.table).updateOne(qry, update, (err,count) => {
+					if(err) {
+						console.error(err.message);
+						db.close();
+						return callback(err)
+					}
+					db.close();
+					return callback(null,count);
+				})
+			});	
+		}
+		 else {
 			console.log("Method Not Supported");
 			return callback("Method Not Supported");
 		}

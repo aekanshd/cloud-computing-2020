@@ -78,14 +78,17 @@ exports.readDb = (req, res, next) => {
 		sendData(req, (err, retval) => {
 			if (err) {
 				return res.status(500).send(err);
+			} else{
+				req.queue = "response";
+				readData(req, (err, retval) => {
+					if (err) {
+						return res.status(500).send(err);
+					} else {
+						console.log("Read Data function returned : " + retval)
+						return res.send(retval);
+					}
+				});
 			}
-			req.queue = "response";
-			readData(req, (err, retval) => {
-				if (err) {
-					return res.status(500).send(err);
-				}
-				return res.status(200).send(retval);
-			});
 		});
 	} else {
 		return res.status(400).send("Method Not Supported");
@@ -95,23 +98,22 @@ exports.readDb = (req, res, next) => {
 exports.clearDb = (req, res, next) => {
 	console.log("Clear DB");
 	if (req.method === "POST") {
+		var flag = 0
 		var tables = ["rides", "users"];
 		tables.forEach((table) => {
 			let db_req = { table: table, where: {} };
-			const options = {
-				method: "DELETE",
-				body: db_req,
-				json: true,
-			};
-			req.body = options;
+			req.method = "DELETE";
+			req.body = db_req;
 			req.queue = "write";
 			sendData(req, (err, retval) => {
 				if (err) {
+					flag = 1;
 					return res.status(500).send(err);
 				}
-				return res.status(200).send(retval);
+				return
 			});
 		});
+		if(flag ==0) {return res.status(200).send({});}
 	} else {
 		return res.status(400).send("Method Not Supported");
 	}
@@ -132,7 +134,7 @@ sendData = (req, callback) => {
 				return callback(err);
 			}
 			console.log("Created Channel for "+req.queue+" queue..")
-			queue = req.queue;
+			var queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
@@ -156,8 +158,9 @@ readData = (req, callback) => {
 				console.error(error1);
 				return callback(error1);
 			}
+			channel.prefetch(1)
 			//var queue = 'write';
-			queue = req.queue;
+			var queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
@@ -167,9 +170,6 @@ readData = (req, callback) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
 					return callback(null,JSON.parse(data));
-				},
-				{
-					noAck: true,
 				}
 			);
 		});
