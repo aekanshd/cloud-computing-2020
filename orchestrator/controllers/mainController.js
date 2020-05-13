@@ -85,11 +85,12 @@ exports.readDb = (req, res, next) => {
 				if (err) {
 					return res.status(500).send(err);
 				}
-				return res.status(200).send(retval);
+				console.log("Read Data function returned : " + retval);
+				return res.send(retval);
 			});
 		});
 	} else {
-		res.status(400).send("Method Not Supported");
+		return res.status(400).send("Method Not Supported");
 	}
 };
 
@@ -158,6 +159,7 @@ readData = (req, callback) => {
 				return callback(error1);
 			}
 			//var queue = 'write';
+			channel.prefetch(1)
 			queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
@@ -168,9 +170,6 @@ readData = (req, callback) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
 					return callback(null,JSON.parse(data));
-				},
-				{
-					noAck: true,
 				}
 			);
 		});

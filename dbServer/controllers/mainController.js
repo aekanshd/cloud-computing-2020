@@ -158,14 +158,14 @@ syncSlave = (channel, exchange, callback) => {
 					if (msg.content) {
 						console.log(" [x] message %s", msg.content.toString());
 						data = msg.content.toString()
-				console.log(" [x] Recieved %s", data);
-				writeDb(JSON.parse(data), (err, res) => {
-					if (err) {
-						console.log(err)
-						return callback(err)
-					}
-					return callback(null, res)
-				})
+						console.log(" [x] Recieved %s", data);
+						writeDb(JSON.parse(data), (err, res) => {
+							if (err) {
+								console.log(err)
+								return callback(err)
+							}
+							return callback(null, res)
+						})
 					}
 				},
 				{
