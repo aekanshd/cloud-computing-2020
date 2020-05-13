@@ -6,7 +6,7 @@ var async = require("async");
 const dbConfig = {
 	HOST: process.env.DB_HOST || "localhost",
 	USER: process.env.DB_USERNAME || "root",
-	PASSWORD: process.env.DB_PASSWORD || "",
+	PASSWORD: process.env.DB_PASSWORD || "root",
 	DB: process.env.DB_DATABASE || "rideshare",
 };
 const mongoClient = require("mongodb").MongoClient;
@@ -65,12 +65,12 @@ function slave(callback) {
 			if (err) {
 				return callback(err);
 			}
-			//readChannel.prefetch(1);
+			readChannel.prefetch(1);
 			connection.createChannel((err, syncChannel) => {
 				if (err) {
 					return callback(err);
 				}
-				//syncChannel.prefetch(1);
+				syncChannel.prefetch(1);
 				//Read queue
 				var readQueue = "read";
 				readChannel.assertQueue(readQueue, {
@@ -83,99 +83,104 @@ function slave(callback) {
 				var exchange = "syncExchange";
 				syncChannel.assertExchange(exchange, "fanout", {
 					durable: true,
-				});
+				});/*
 				async.parallel(
-					[
-						() => {
+					{
+						read:() => {
 							readChannel.consume(readQueue, (msg) => {
 								console.log("recieved data..");
 								consumeReadQueue(msg,connection);
 							});
 						},
-						() => {
-							syncSlave(syncChannel, exchange, callback);
+						sync: () => {
+							
+							syncSlave(syncChannel, exchange);
 						},
-					],
+					},
 					(err, results) => {
 						if (err) {
 							console.log(err);
 							return callback(err);
 						}
 						console.log(results);
-						return callback(null, results);
+					}
+				);*/
+				readChannel.consume(readQueue, (msg) => {
+					console.log("recieved data..");
+					if (msg != null) {
+						query = msg.content.toString();
+						console.log(" [x] Received %s", query);
+						
+						readDb(JSON.parse(query), (err, res) => {
+							if (err) {
+								console.log(err)
+								return
+							} else {
+								var responseQueue = "response"
+								connection.createChannel((err, channel) => {
+									if (err) {
+										console.log(err)
+										return
+									}
+									channel.assertQueue(responseQueue, {
+										durable: true
+									})
+									channel.sendToQueue(responseQueue, Buffer.from(JSON.stringify(res)),{persistent:false})
+									return
+								})
+							}
+						})
+					}
+				},{noAck: true});
+				syncChannel.assertQueue(
+					"",
+					{
+						exclusive:false,
+					},
+					function (err, q) {
+						if (err) {
+							console.log(err);
+							return;
+						}
+						console.log(
+							" [*] Waiting for messages in Sync Queue. To exit press CTRL+C"
+						);
+						syncChannel.bindQueue(q.queue, exchange, "");
+						syncChannel.consume(
+							q.queue,
+							function (msg) {
+								if (msg.content) {
+									data = msg.content.toString()
+									console.log(" [x] Recieved %s", data);
+									writeDb(JSON.parse(data), (err, res) => {
+										if (err) {
+											console.log(err)
+											return
+										}
+										return
+									})
+								}
+							},
+							{
+								noAck: true
+							}
+						);
 					}
 				);
 			});
 		});
 	});
 }
-
+/*
 consumeReadQueue = (msg,connection) => {
 	//console.log(channel)
-	if (msg != null) {
-		query = msg.content.toString();
-		console.log(" [x] Received %s", query);
-		
-		readDb(JSON.parse(query), (err, res) => {
-			if (err) {
-				console.log(err)
-				return
-			} else {
-				var responseQueue = "response"
-				connection.createChannel((err, channel) => {
-					if (err) {
-						return callback(err);
-					}
-					channel.assertQueue(responseQueue, {
-						durable: true
-					})
-					channel.sendToQueue(responseQueue, Buffer.from(JSON.stringify(res)),{persistent:false})
-				})
-			}
-		})
-	}
+	
 };
 
-syncSlave = (channel, exchange, callback) => {
-	channel.assertQueue(
-		"",
-		{
-			exclusive: true,
-		},
-		function (err, q) {
-			if (err) {
-				console.log(err);
-				return callback(err);
-			}
-			console.log("Sync function..");
-			console.log(
-				" [*] Waiting for messages in Sync Queue. To exit press CTRL+C"
-			);
-			channel.bindQueue(q.queue, exchange, "");
-			channel.consume(
-				q.queue,
-				function (msg) {
-					if (msg.content) {
-						console.log(" [x] message %s", msg.content.toString());
-						data = msg.content.toString()
-						console.log(" [x] Recieved %s", data);
-						writeDb(JSON.parse(data), (err, res) => {
-							if (err) {
-								console.log(err)
-								return callback(err)
-							}
-							return callback(null, res)
-						})
-					}
-				},
-				{
-					noAck: true,
-				}
-			);
-		}
-	);
+syncSlave = (channel, exchange) => {
+	
 };
-
+*/
 function master(callback) {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {

@@ -27,6 +27,7 @@ services:
             - master_network
         environment:
             - TEAM_NAME=CC_0276_0652_0706_1808
+            - MONGO_INITDB_DATABASE=rideshare
 networks:
     master_network:
         name: master_network

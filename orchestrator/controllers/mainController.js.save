@@ -5,7 +5,7 @@ const Docker = require("dockerode");
 //var build = require('dockerode-build')
 //var pump = require('pump');
 const request = require("request-promise");
-var responseQueueData=[];
+
 rabbit = {
 	hostname: "amqp://rabbitmq:5672/",
 	virtualHost: "rideshare",
@@ -73,25 +73,19 @@ exports.writeDb = (req, res, next) => {
 
 exports.readDb = (req, res, next) => {
 	console.log("DB Read");
-	console.log(req)
 	if (req.method === "POST") {
-		var options = {
-			method:req.method,
-			queue:"read",
-			body:req.body
-		}
-		sendData(options, (err, retval) => {
+		req.queue = "read";
+		sendData(req, (err, retval) => {
 			if (err) {
 				return res.status(500).send(err);
-			} else{
-				req.queue = "response";
-				console.log("Reading Response")
-				readData(req);
-				console.log("read DB api : "+responseQueueData)
-				var returnData = responseQueueData
-				responseQueueData=[]
-				return res.status(200).send(returnData)
 			}
+			req.queue = "response";
+			readData(req, (err, retval) => {
+				if (err) {
+					return res.status(500).send(err);
+				}
+				return res.status(200).send(retval);
+			});
 		});
 	} else {
 		return res.status(400).send("Method Not Supported");
@@ -101,22 +95,23 @@ exports.readDb = (req, res, next) => {
 exports.clearDb = (req, res, next) => {
 	console.log("Clear DB");
 	if (req.method === "POST") {
-		var flag = 0
 		var tables = ["rides", "users"];
 		tables.forEach((table) => {
 			let db_req = { table: table, where: {} };
-			req.method = "DELETE";
-			req.body = db_req;
+			const options = {
+				method: "DELETE",
+				body: db_req,
+				json: true,
+			};
+			req.body = options;
 			req.queue = "write";
 			sendData(req, (err, retval) => {
 				if (err) {
-					flag = 1;
 					return res.status(500).send(err);
 				}
-				return
+				return res.status(200).send(retval);
 			});
 		});
-		if(flag ==0) {return res.status(200).send({});}
 	} else {
 		return res.status(400).send("Method Not Supported");
 	}
@@ -128,44 +123,37 @@ sendData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (err, connection) {
 		if (err) {
 			console.error(err);
-			return callback(err,null);
+			return callback(err);
 		}
-		console.log("Connected to rabbit..")
 		connection.createChannel(function (err, channel) {
 			if (err) {
 				console.error(err);
 				return callback(err);
 			}
-			console.log("Created Channel for "+req.queue+" queue..")
-			var queue = req.queue;
+			//var queue = 'write';
+			queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
-			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})),
-			{persistent:false}
-			);
-			console.log("Message sent...")
+			channel.sendToQueue(queue, Buffer.from(JSON.stringify({method:req.method,body:req.body})));
 			return callback(null, {});
 		});
 	});
 };
 
-readData = (req) => {
-	
+readData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {
 			console.error(error0);
-			return error0
+			return callback(error);
 		}
 		connection.createChannel(function (error1, channel) {
 			if (error1) {
 				console.error(error1);
-				return error1
+				return callback(error1);
 			}
-			channel.prefetch(1)
 			//var queue = 'write';
-
-			var queue = req.queue;
+			queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
@@ -174,14 +162,13 @@ readData = (req) => {
 				(msg) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
-					responseQueueData = JSON.parse(data)
-					console.log("line 178 : ")
-				},{noAck: true}
+					connection.close()
+					return callback(null, JSON.parse(data));
+				},
+				{
+					noAck: true,
+				}
 			);
-			console.log("after consume..")
-			
 		});
-		
 	});
-	
 };

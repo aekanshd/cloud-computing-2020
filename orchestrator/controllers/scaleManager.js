@@ -256,8 +256,10 @@ function deleteWorker(workerIndex, callback) {
 }
 
 exports.updateRequests = (req, res, next) => {
+	//console.log(req)
 	reqRate = reqRate + 1;
-	next();
+	console.log("Request Count : "+ reqRate)
+	return next()
 };
 
 function updateWorkers() {
