@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 5
+sleep 10
 node load_locations.js &
 #node zooClient.js
 node controllers/mainController.js
