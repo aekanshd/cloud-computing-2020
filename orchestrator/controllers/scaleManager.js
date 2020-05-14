@@ -206,6 +206,7 @@ function replicateContainer(
 									return callback(err);
 								}
 								console.log(data);
+								console.log(container)
 								return callback(null, container.id);
 							}
 						);
@@ -217,7 +218,7 @@ function replicateContainer(
 }
 
 function deleteWorker(workerIndex, callback) {
-	var container = docker.getContainer(workers[workerIndex].serverId);
+	var container = docker.getContainer(workers[workerIndex].serverId);//error here, serverId of undefined
 	container.stop();
 	container.remove((err, data) => {
 		if (err) {
@@ -398,7 +399,7 @@ exports.workerList = (req, res, next) => {
 			});
 		});
 		IDs.sort();
-		res.status(200).send(IDs.sort());
+		res.status(200).send(IDs);
 	});
 
 	return;
