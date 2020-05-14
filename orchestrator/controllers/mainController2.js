@@ -2,7 +2,6 @@ var amqp = require("amqplib/callback_api");
 const path = require("path");
 const fs = require("fs");
 const Docker = require("dockerode");
-//const http = require("http");
 //var build = require('dockerode-build')
 //var pump = require('pump');
 const request = require("request-promise");
@@ -79,47 +78,19 @@ exports.readDb = (req, res, next) => {
 		req.queue = "read";
 		sendData(req, (err, retval) => {
 			if (err) {
-				//return res.status(500).send(err);
-				throw err
+				return res.status(500).send(err);
 			}
-			const options = {
-			method: 'GET',
-			uri: 'http://localhost:8000/api/v1/db/readData',
-			body: {},
-			json: true
-			}
-
-			options['body'] = {
-				queue: 'response'				
-			}
-			request(options).then(response=>{
-				console.log(response)
-				res.status(200).send(response)
-			}).catch(err => {throw err})
-			
-			/*
-			http.get("http://localhost:8000/api/v1/db/readData", ,(resp)=>{
-				let data = '';
-				resp.on('data', (chunk)=>{
-					data+=chunk;
-
-				});
-				resp.on('end', ()=>{
-					res.status(200).send(JSON.parse(data));
-				});
-
-			}).on("error", (err)=>{
-				res.status(500).send(err);
-			});
-			
+			req.queue = "response";
 			readData(req, (err, retval) => {
+				console.log("Returned from readData : ",retval)
 				if (err) {
-					return res.status(500).send(err);
+					console.log(err)
+					return
+				} else{
+					return res.status(200).send(retval);
 				}
-				else{
-				return res.status(200).send(JSON.parse(retval));
-			}
-			});*/
+				
+			});
 		});
 	} else {
 		res.status(400).send("Method Not Supported");
@@ -166,7 +137,7 @@ sendData = (req, callback) => {
 				return callback(err);
 			}
 			console.log("Created Channel for "+req.queue+" queue..")
-			queue = req.queue;
+			var queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
@@ -179,40 +150,36 @@ sendData = (req, callback) => {
 	});
 };
 
-exports.readData = (req, res, next) => {
+readData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {
 			console.error(error0);
-			//return res.status(500).send(error0);
-			//return callback(error0);
-			throw error0
+			return callback(error0);
 		}
 		connection.createChannel(function (error1, channel) {
 			if (error1) {
 				console.error(error1);
-				//return res.status(500).send(error1);
-				throw error1
-				//return callback(error1);
+				return callback(error1);
 			}
 			//var queue = 'write';
-			queue = req.body.queue;
-			var retval=channel.assertQueue(queue, {
-				durable: true
-					});
+			queue = req.queue;
+			channel.assertQueue(queue, {
+				durable: true,
+			});
 			channel.prefetch(1)
 			channel.consume(
 				queue,
 				(msg) => {
 					data = msg.content.toString();
 					console.log(" Received %s", data);
-					res.status(200).send(data)
-					return
+					callback(null,JSON.parse(data)); 
+					connection.close()					
 				},
 				{
 					noAck: true,
 				}
 			);
 		});
-	});
+	})
 };
 

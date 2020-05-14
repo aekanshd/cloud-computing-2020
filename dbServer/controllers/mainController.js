@@ -117,6 +117,7 @@ function slave(callback) {
 								return
 							} else {
 								var responseQueue = "response"
+								console.log("Data recieved from readDB :",res)
 								connection.createChannel((err, channel) => {
 									if (err) {
 										console.log(err)
@@ -126,7 +127,10 @@ function slave(callback) {
 										durable: true
 									})
 									channel.sendToQueue(responseQueue, Buffer.from(JSON.stringify(res)),{persistent:false})
-									return
+									setTimeout(function() {
+									    channel.close();
+									    
+									}, 500);
 								})
 							}
 						})

@@ -1,8 +1,9 @@
 module.exports = function (router) {
-	var mainController = require("../controllers/mainController");
+	var mainController = require("../controllers/mainController2");
 	var scaler = require("../controllers/scaleManager");
 	router.use("/db/read", scaler.updateRequests)
 	router.get("/", mainController.home);
+	//router.get("/db/readData", mainController.readData);
 	router.post("/db/read", mainController.readDb);
 	router.post("/db/write", mainController.writeDb);
 	router.post("/db/clear", mainController.clearDb);
