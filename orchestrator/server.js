@@ -90,10 +90,9 @@ client.once("connected", () => {
 
   listChildren(client, "/");
 
-  createPath(client, "/test");
-
   console.log("Initialized Zookeeper.");
-  // client.close();
+
+  client.close();
 });
 
 client.connect();

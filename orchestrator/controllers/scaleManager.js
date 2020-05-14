@@ -7,6 +7,7 @@ var reqRate = 0;
 var workerCount = [];
 var workers = {};
 var zookeeper = require("node-zookeeper-client");
+var PID = {};
 
 function initialiseWorkers() {
 	docker.listContainers((err, containers) => {
@@ -385,21 +386,22 @@ exports.crashSlave = (req, res, next) => {
 };
 
 exports.workerList = (req, res, next) => {
-	docker.listContainers(function (err, containers) {
+	docker.listContainers((err, containers) => {
 		if (err) {
 			return res.status(500).send(err);
 		}
-
 		let IDs = [];
-		containers.forEach(function (containerInfo) {
-			docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+		containers.forEach((containerInfo) => {
+			container = docker.getContainer(containerInfo.Id)
+			container.inspect((err, data) => {
 				console.log(data["State"]["Pid"]);
-				if (data["Name"].startsWith("/dbworker"))
-					IDs.push(data["State"]["Pid"]);
+				// if (data["Name"].startsWith("/dbworker"))
+				IDs.push(data["State"]["Pid"]);
 			});
+			console.log("in", IDs);
 		});
-		IDs.sort();
-		res.status(200).send(IDs);
+		console.log("out", IDs);
+		res.status(200).send(IDs.sort());
 	});
 
 	return;
