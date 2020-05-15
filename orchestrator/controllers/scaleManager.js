@@ -8,9 +8,14 @@ var workerCount = [];
 var workers = {};
 var zookeeper = require("node-zookeeper-client");
 
+process.on('unhandledRejection', error => {
+  console.log('unhandledRejection', error);
+})
+
+
 function initialiseWorkers() {
-	docker.listContainers((err, containers) => {
-		containers.forEach((container) => {
+	docker.listContainers(async (err, containers) => {
+		await containers.forEach((container) => {
 			container.Names.forEach((name) => {
 				console.log(name);
 				if (name == "/dbworker_master") {
@@ -37,7 +42,7 @@ function initialiseWorkers() {
 				}
 			});
 		});
-		docker.listNetworks((err, networks) => {
+		await docker.listNetworks((err, networks) => {
 			if (err) {
 				console.log("Failed to List Networkss\n");
 				console.log(err);
@@ -68,17 +73,18 @@ function getNextIndex() {
 	}
 	return i;
 }
-function createWorker(callback) {
-	workerIndex = getNextIndex();
-	replicateContainer(
+async function createWorker(callback) {
+	var workerIndex = await getNextIndex();
+	await replicateContainer(
 		"mongodb_master",
-		"mongodb_clone_" + workerIndex,
+		"mongodb_slave_" + workerIndex,
 		"mongodb_slave_" + workerIndex,
 		(err, newSlaveId) => {
 			if (err) {
 				console.log(err);
 				return callback(err);
 			}
+			console.log("Replicated mongo Successfuly")
 			docker.createNetwork(
 				{
 					Name: "slave_network_" + workerIndex,
@@ -89,7 +95,7 @@ function createWorker(callback) {
 						console.log(err);
 						return callback(err);
 					}
-					console.log(network);
+					
 					console.log("Network Created\n");
 					network.connect({ Container: newSlaveId }, (err, data) => {
 						if (err) {
@@ -99,20 +105,25 @@ function createWorker(callback) {
 							console.log(err);
 							return callback(err);
 						}
+						console.log("Connected Mongo to network : ","slave_network_" + workerIndex)
 						docker.run(
-							"dbworker_slave",
-							[],
+							"dbworker_slave:latest",
+							["./start.sh"],
 							undefined,
 							{
 								name: "dbworker_slave_" + workerIndex,
 								Env: ["ROLE=slave", "DB_HOST=mongodb_slave_"+workerIndex],
-								HostConfig: { AutoRemove: true },
+								HostConfig: { AutoRemove: true ,NetworkMode: "rabbitmq_network"},
 							},
 							(err, data, container) => {
 								if (err) {
 									console.log(err);
 									return callback(err);
 								}
+								console.log(data.StatusCode)
+								console.log("Container Stopped....")
+							}).on("container",(container)=>{
+								console.log("Container up...")
 								network.connect(
 									{ Container: container.id },
 									(err, data) => {
@@ -123,41 +134,46 @@ function createWorker(callback) {
 											console.log(err);
 											return callback(err);
 										}
+										console.log("Connected dbworker to slave network")
 										docker.listNetworks((err, networks) => {
 											if (err) {
 												console.log(
 													"failed to list networks"
 												);
-												process.exit(0);
+												return callback(err);
 											}
 											networks.forEach((network) => {
 												if (
 													network.Name ==
-													"zookeeper_network" ||
-													network.Name ==
-													"rabbitmq_network"
+													"zookeeper_network"
 												) {
 													net = docker.getNetwork(
 														network.Id
 													);
 													net.connect(container.id);
+													console.log("connected...")
 												}
 											});
 											workers[workerIndex] = {
 												serverId: container.id,
 												mongodbId: newSlaveId,
-												networkId: network.id,
+												networkId: network.id
 											};
-											return callback(
-												null,
-												"New worker created successfully..."
+											console.log("worker created")
+											return callback(null,
+											workers[workerIndex]												
 											);
 										});
 									}
 								);
-							}
-						);
+							} 
+							
+						).on("error",(err)=>{
+						  console.log(err);
+						  return callback(err);
+						})
 					});
+					
 				}
 			);
 		}
@@ -170,27 +186,28 @@ function replicateContainer(
 	newContainerName,
 	callback
 ) {
+	console.log("replicating")
 	docker.listContainers((err, containers) => {
 		if (err) {
 			console.log("Failed to List Containers\n");
 			console.log(err);
 			return callback(err);
-		}
+		}		
 		containers.forEach((container) => {
 			container.Names.forEach((name) => {
 				if (name == "/" + containerName) {
 					console.log(container.Id);
 					var newContainer = docker.getContainer(container.Id);
 					//console.log(c)
-					newContainer.commit({ repo: newImageName }, (err, res) => {
+					newContainer.commit({ repo: newImageName },  (err, res) => {
 						if (err) {
 							console.log(err);
 							return callback(err);
 						}
-						console.log(res);
+						console.log("Commit Result",res);
 						docker.run(
 							newImageName,
-							[],
+							["/bin/bash"],
 							undefined,
 							{
 								name: newContainerName,
@@ -205,11 +222,17 @@ function replicateContainer(
 									console.log(err);
 									return callback(err);
 								}
-								console.log(data);
-								console.log(container)
-								return callback(null, container.id);
+								console.log("Container Stopped...")
 							}
-						);
+						).on("container",(container)=>{
+							console.log("Started new Container : ",container.id)
+							console.log(data)						
+							return callback(null, container.id);
+								
+						}).on("error",(err)=>{
+						  console.log(err);
+						  return callback(err);
+						})
 					});
 				}
 			});
@@ -218,8 +241,13 @@ function replicateContainer(
 }
 
 function deleteWorker(workerIndex, callback) {
+	console.log("Deleting Container...")
 	var container = docker.getContainer(workers[workerIndex].serverId);//error here, serverId of undefined
-	container.stop();
+	container.stop((err,data)=>{
+	if (err) {
+			console.log(err);
+			return callback(err);
+		}
 	container.remove((err, data) => {
 		if (err) {
 			console.log(err);
@@ -228,32 +256,37 @@ function deleteWorker(workerIndex, callback) {
 		console.log("worker container Deleted successfully");
 		container = docker.getContainer(workers[workerIndex].mongodbId);
 		var mongoImage = docker.getImage();
-		container.stop();
-		container.remove((err, data) => {
+		container.stop( (err,data) =>{
 			if (err) {
-				return callback(err);
-			}
-			console.log("mongodb container Deleted successfully");
-			image.remove((err) => {
-				if (err) {
-					console.log("Failed to remove image");
-					return;
+					return callback(err);
 				}
-				return;
-			});
-			var network = docker.getNetwork(workers[workerIndex].networkId);
-			network.remove((err, data) => {
+			container.remove((err, data) => {
 				if (err) {
 					return callback(err);
 				}
-				console.log(data);
-				console.log("Slave Deleted successfully");
-				delete workers[workerIndex];
-				workerCount[workerIndex - 1] = 0;
-				return callback(null, data);
+				console.log("mongodb container Deleted successfully");
+				image.remove((err) => {
+					if (err) {
+						console.log("Failed to remove image");
+						return;
+					}
+					return;
+				});
+				var network = docker.getNetwork(workers[workerIndex].networkId);
+				network.remove((err, data) => {
+					if (err) {
+						return callback(err);
+					}
+					console.log(data);
+					console.log("Slave Deleted successfully");
+					delete workers[workerIndex];
+					workerCount[workerIndex - 1] = 0;
+					return callback(null, data);
+				});
 			});
-		});
+		})
 	});
+	})
 }
 
 exports.updateRequests = (req, res, next) => {
@@ -263,33 +296,45 @@ exports.updateRequests = (req, res, next) => {
 	return next()
 };
 
-function updateWorkers() {
-	var newWorkers = Math.floor(reqRate / 20);
+async function updateWorkers() {
+	//var newWorkers = Math.floor(reqRate / 20);
+	var newWorkers= reqRate
 	reqRate = 0;
 	console.log("Scale Up needed : " + newWorkers);
 
 	if (newWorkers > workerCount.length) {
-		diff = newWorkers - workerCount.length;
-		while (diff) {
-			createWorker((err, retVal) => {
+		var diff = newWorkers - workerCount.length;
+		console.log("Creating workers..")
+		while (diff) {	
+			console.log("Diff : ",diff)		
+			await createWorker((err, retVal) => {
 				if (err) {
 					console.log(err);
 					process.exit(0);
 				}
+				console.log(retVal)
 				return;
-			});
+			})
 			diff = diff - 1;
+			 
 		}
-	} else {
-		diff = workerCount.length - newWorkers;
+		console.log("Scale Up succeded")
+		return
+	} else if (newWorkers < workerCount.length) {
+		var diff = workerCount.length - newWorkers;
+		console.log("deleting workers..")
 		while (diff) {
-			deleteWorker(diff, (err, retVal) => {
+			console.log("Diff : ",diff)
+			await deleteWorker(diff, (err, retVal) => {
 				console.log(err);
 				process.exit(0);
 			});
 			diff = diff - 1;
 		}
+		console.log("Scale down succeded")
+		return
 	}
+	
 }
 
 exports.crashMaster = (req, res, next) => {
@@ -406,4 +451,4 @@ exports.workerList = (req, res, next) => {
 };
 
 initialiseWorkers();
-setInterval(updateWorkers, 1000 * 120);
+setInterval(updateWorkers, 1000 * 30);
