@@ -95,7 +95,11 @@ exports.readDb = (req, res, next) => {
 			request(options).then(response=>{
 				console.log(response)
 				res.status(200).send(response)
-			}).catch(err => {throw err})
+			}).catch(err => {
+				console.log("There was some issue in request read.");
+				
+				throw err
+			})
 			
 			/*
 			http.get("http://localhost:8000/api/v1/db/readData", ,(resp)=>{
