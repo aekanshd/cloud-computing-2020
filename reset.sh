@@ -1,0 +1,3 @@
+sudo docker kill rabbitmq_rabbitmq_1 zookeeper orchestrator dbworker_master dbworker_slave mongodb_master mongodb_slave
+sudo docker container rm rabbitmq_rabbitmq_1 zookeeper orchestrator dbworker_master dbworker_slave mongodb_master mongodb_slave
+sudo docker network prune
