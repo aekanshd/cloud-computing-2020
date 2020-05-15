@@ -298,8 +298,8 @@ exports.updateRequests = (req, res, next) => {
 };
 
 async function updateWorkers() {
-	//var newWorkers = Math.floor(reqRate / 20);
-	var newWorkers= reqRate
+	var newWorkers = Math.floor(reqRate / 20);
+	//var newWorkers= reqRate
 	reqRate = 0;
 	console.log("Scale Up needed : " + newWorkers);
 
@@ -453,4 +453,4 @@ exports.workerList = (req, res, next) => {
 };
 
 initialiseWorkers();
-setInterval(updateWorkers, 1000 * 30);
+setInterval(updateWorkers, 1000 * 120);
