@@ -397,8 +397,9 @@ async function updateWorkers () {
 }
 
 exports.crashMaster = (req, res, next) => {
+	console.log("Crash master API")
 	if (workers.master === undefined) res.status(404).send();
-
+	
 	for (var key in workers) {
 		if (workers[key].serverId === workers.master.serverId) {
 			deleteWorker(key, (err, data) => {
@@ -458,19 +459,25 @@ exports.crashMaster = (req, res, next) => {
 exports.crashSlave = (req, res, next) => {
 	let maxPID = Number;
 	let CID = String;
-
+	console.log("Crash API")
 	docker.listContainers((err, containers) => {
 		if (err) return res.status(500).send(err);
+		console.log("Before for each..")
 		containers.forEach((containerInfo) => {
-			docker.getContainer(containerInfo).inspect((err, data) => {
-				if (err) console.error(err);
+			docker.getContainer(containerInfo.Id).inspect((err, data) => {
+				console.log("Docker Insepect")
+				if (err) { console.error(err);return res.status(500).send({})}
+
 				console.log(data.State.Pid);
 				if (data.Name === '/dbworker_slave' && data.State.Pid > maxPID) {
 					maxPID = data.State.Pid;
 					CID = containerInfo.Id;
+					console.log("max:",maxPID)
 				}
 			});
+			
 		});
+		console.log("End of Foreach")
 		for (var key in workers) {
 			if (workers[key].serverId === CID) {
 				deleteWorker(key, (err, data) => {
@@ -478,10 +485,12 @@ exports.crashSlave = (req, res, next) => {
 						console.log(err);
 						res.status(500).send({});
 					}
+					console.log("Delete Success..")
 					res.status(200).send({});
 				});
 			}
 		}
+
 	});
 };
 
