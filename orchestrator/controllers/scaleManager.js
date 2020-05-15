@@ -1,4 +1,4 @@
-Docker = require("dockerode");
+var Docker = require("dockerode");
 //tar = require("tar-fs")
 path = require("path");
 let docker = new Docker();
@@ -85,7 +85,7 @@ async function createWorker(callback) {
 				console.log(err);
 				return callback(err);
 			}
-			console.log("Replicated mongo Successfuly")
+			console.log("Replicated mongo Successfully")
 			docker.createNetwork(
 				{
 					Name: "slave_network_" + workerIndex,
@@ -118,13 +118,14 @@ async function createWorker(callback) {
 							},
 							(err, data, container) => {
 								if (err) {
-									console.log(err);
+									console.log("network.connect Error:\n", err);
 									return callback(err);
 								}
 								console.log(data.StatusCode)
 								console.log("Container Stopped....")
 							}).on("container",(container)=>{
 								console.log("Container up...")
+								console.log("Container up with ID: ", container.id);
 								network.connect(
 									{ Container: container.id },
 									(err, data) => {
@@ -148,11 +149,20 @@ async function createWorker(callback) {
 													network.Name ==
 													"zookeeper_network"
 												) {
-													net = docker.getNetwork(
+													console.log("networks.forEach :", network);
+													
+													var net = docker.getNetwork(
 														network.Id
 													);
-													net.connect(container.id);
-													console.log("connected...")
+													// var newnet = docker.getNetwork(network.Id);
+													console.log("Container ID (inside networks.forEach):", container);
+													net.connect({ Container: container.id })
+													.then(result => {
+														console.log("connected...")
+													})
+													.catch(error => {
+														console.log("There was an error connecting.", error);
+													});
 												}
 											});
 											workers[workerIndex] = {
@@ -170,6 +180,8 @@ async function createWorker(callback) {
 							} 
 							
 						).on("error",(err)=>{
+						  console.log("createWorker error:");
+						  
 						  console.log(err);
 						  return callback(err);
 						})
@@ -227,10 +239,12 @@ function replicateContainer(
 							}
 						).on("container",(container)=>{
 							console.log("Started new Container : ",container.id)
-							console.log(data)						
+							// console.log(data)						
 							return callback(null, container.id);
 								
 						}).on("error",(err)=>{
+						  console.log("replicateContainer error:");
+						  
 						  console.log(err);
 						  return callback(err);
 						})
@@ -298,8 +312,8 @@ exports.updateRequests = (req, res, next) => {
 };
 
 async function updateWorkers() {
-	var newWorkers = Math.floor(reqRate / 20);
-	//var newWorkers= reqRate
+	// var newWorkers = Math.floor(reqRate / 20);
+	var newWorkers= reqRate
 	reqRate = 0;
 	console.log("Scale Up needed : " + newWorkers);
 
@@ -319,7 +333,7 @@ async function updateWorkers() {
 			diff = diff - 1;
 			 
 		}
-		console.log("Scale Up succeded")
+		console.log("Scale Up succeeded")
 		return
 	} else if (newWorkers < workerCount.length) {
 		var diff = workerCount.length - newWorkers;
@@ -332,7 +346,7 @@ async function updateWorkers() {
 			});
 			diff = diff - 1;
 		}
-		console.log("Scale down succeded")
+		console.log("Scale down succeeded")
 		return
 	}
 	
@@ -454,3 +468,4 @@ exports.workerList = (req, res, next) => {
 
 initialiseWorkers();
 setInterval(updateWorkers, 1000 * 120);
+setInterval(updateWorkers, 1000 * 30);
