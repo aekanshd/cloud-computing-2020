@@ -1,11 +1,10 @@
 var amqp = require('amqplib/callback_api');
-// const path = require('path');
-// const fs = require('fs');
-// const Docker = require('dockerode');
-// const http = require("http");
-// var build = require('dockerode-build')
-// var pump = require('pump');
-const request = require('request-promise');
+// const path = require("path");
+// const fs = require("fs");
+// const Docker = require("dockerode");
+// const build = require('dockerode-build')
+// const pump = require('pump');
+// // const request = require("request-promise");
 
 const rabbit = {
 	hostname: 'amqp://rabbitmq:5672/',
@@ -27,33 +26,33 @@ exports.home = (req, res, next) => {
 /*
 var createOptions = {
 	Image:"newimage",
-	Tty:true,
-	ExposedPorts: {
-		"3000/tcp:": {},
-		"1883/tcp:": {}
-	},
-	Env:[
-		"DBHOST=" + dbHost,
-	],
-	Cmd:[
-		"/bin/bash", "-c", "nodejs /opt/ifi/lib/ifi/app.js"
-	],
-	HostConfig:{
-		Binds: ["/Users/cefn/Documents/code/imagination/git/ifi/impl/releases/keynote/0.1.0:/opt/ifi"],
-	}
+    Tty:true,
+    ExposedPorts: {
+        "3000/tcp:": {},
+        "1883/tcp:": {}
+    },
+    Env:[
+        "DBHOST=" + dbHost,
+    ],
+    Cmd:[
+        "/bin/bash", "-c", "nodejs /opt/ifi/lib/ifi/app.js"
+    ],
+    HostConfig:{
+        Binds: ["/Users/cefn/Documents/code/imagination/git/ifi/impl/releases/keynote/0.1.0:/opt/ifi"],
+    }
 };
 
 var startOptions = {
-	PortBindings: {
-		"3000/tcp": [{
-			"HostIP":"0.0.0.0",
-			"HostPort": "3000"
-		}],
-		"1883/tcp": [{
-			"HostIP":"0.0.0.0",
-			"HostPort": "1883"
-		}],
-	},
+    PortBindings: {
+        "3000/tcp": [{
+            "HostIP":"0.0.0.0",
+            "HostPort": "3000"
+        }],
+        "1883/tcp": [{
+            "HostIP":"0.0.0.0",
+            "HostPort": "1883"
+        }],
+    },
 };
 */
 
@@ -78,51 +77,17 @@ exports.readDb = (req, res, next) => {
 		req.queue = 'read';
 		sendData(req, (err, retval) => {
 			if (err) {
-				// return res.status(500).send(err);
-				throw err;
+				return res.status(500).send(err);
 			}
-			const options = {
-				method: 'GET',
-				uri: 'http://localhost:8000/api/v1/db/readData',
-				body: {},
-				json: true,
-			};
-
-			options.body = {
-				queue: 'response'
-			};
-			request(options).then(response => {
-				console.log(response);
-				res.status(200).send(response);
-			}).catch(err => {
-				console.log('There was some issue in request read.');
-
-				throw err;
-			});
-
-			/*
-			http.get("http://localhost:8000/api/v1/db/readData", ,(resp)=>{
-				let data = '';
-				resp.on('data', (chunk)=>{
-					data+=chunk;
-
-				});
-				resp.on('end', ()=>{
-					res.status(200).send(JSON.parse(data));
-				});
-
-			}).on("error", (err)=>{
-				res.status(500).send(err);
-			});
-
+			req.queue = 'response';
 			readData(req, (err, retval) => {
+				console.log('Returned from readData : ', retval);
 				if (err) {
-					return res.status(500).send(err);
+					console.log(err);
+				} else {
+					return res.status(200).send(retval);
 				}
-				else{
-				return res.status(200).send(JSON.parse(retval));
-			}
-			}); */
+			});
 		});
 	} else {
 		res.status(400).send('Method Not Supported');
@@ -146,9 +111,7 @@ exports.clearDb = (req, res, next) => {
 				}
 			});
 		});
-		if (flag === 0) {
-			return res.status(200).send({});
-		}
+		if (flag === 0) { return res.status(200).send({}); }
 	} else {
 		return res.status(400).send('Method Not Supported');
 	}
@@ -169,15 +132,11 @@ const sendData = (req, callback) => {
 				return callback(err);
 			}
 			console.log('Created Channel for ' + req.queue + ' queue..');
-			const queue = req.queue;
+			var queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
-			channel.sendToQueue(
-				queue,
-				Buffer.from(
-					JSON.stringify({ method: req.method, body: req.body })
-				),
+			channel.sendToQueue(queue, Buffer.from(JSON.stringify({ method: req.method, body: req.body })),
 				{ persistent: false }
 			);
 			console.log('Message sent...');
@@ -186,23 +145,19 @@ const sendData = (req, callback) => {
 	});
 };
 
-exports.readData = (req, res, next) => {
+const readData = (req, callback) => {
 	amqp.connect(rabbitServer, opt, function (error0, connection) {
 		if (error0) {
 			console.error(error0);
-			// return res.status(500).send(error0);
-			// return callback(error0);
-			throw error0;
+			return callback(error0);
 		}
 		connection.createChannel(function (error1, channel) {
 			if (error1) {
 				console.error(error1);
-				// return res.status(500).send(error1);
-				throw error1;
-				// return callback(error1);
+				return callback(error1);
 			}
 			// var queue = 'write';
-			const queue = req.body.queue;
+			const queue = req.queue;
 			channel.assertQueue(queue, {
 				durable: true,
 			});
@@ -212,7 +167,8 @@ exports.readData = (req, res, next) => {
 				(msg) => {
 					const data = msg.content.toString();
 					console.log(' Received %s', data);
-					res.status(200).send(data);
+					callback(null, JSON.parse(data));
+					connection.close();
 				},
 				{
 					noAck: true,
