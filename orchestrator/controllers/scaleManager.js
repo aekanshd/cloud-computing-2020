@@ -527,6 +527,6 @@ exports.workerList = (req, res, next) => {
 
 initialiseWorkers();
 
-//setInterval(updateWorkers, 1000 * 120);
-setInterval(updateWorkers, 1000 * 60);
+setInterval(updateWorkers, 1000 * 120);
+//setInterval(updateWorkers, 1000 * 60);
 
