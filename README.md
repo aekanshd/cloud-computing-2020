@@ -11,13 +11,13 @@ sudo ./dbaas.sh
 
 ### `dbaas.sh`
 
-This script start 5 docker containers:
+This script start 7 docker containers:
 
-1. rabbitmq
-2. zookeeper
-3. orchestrator
-4. dbServer - Master
-5. dbServer - Slave
+1. RabbitMQ
+2. ZooKeeper
+3. Orchestrator
+4. MongoDB
+5. dbServer
 
 ### `restart.sh`
 
