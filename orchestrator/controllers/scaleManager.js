@@ -364,10 +364,10 @@ exports.updateRequests = (req, res, next) => {
 
 async function updateWorkers() {
 
-	// var newWorkers = Math.floor(reqRate / 20);
+	var newWorkers = Math.floor(reqRate / 20);
 
 	
-	var newWorkers = reqRate
+	//var newWorkers = reqRate
 	if(reqRate==0){
 		newWorkers = 1
 	}
