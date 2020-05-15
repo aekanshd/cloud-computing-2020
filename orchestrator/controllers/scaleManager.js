@@ -27,10 +27,11 @@ function initialiseWorkers() {
 					
 					console.log("master set : ",container.Id);
 				} else if (name == "/dbworker_slave") {
-					if (workers["slave"] == undefined) {
-						workers["slave"] = {};
+					if (workers[0] == undefined) {
+						workers[0] = {};
+						workerCount[0]=0
 					}
-					workers["slave"]["serverId"] = container.Id;
+					workers[0]["serverId"] = container.Id;
 					console.log("slave set : ",container.Id);
 				} else if (name == "/mongodb_master") {
 					if (workers["master"] == undefined) {
@@ -39,10 +40,11 @@ function initialiseWorkers() {
 					workers["master"]["dbId"] = container.Id;
 					console.log("mongodb_master : ",container.Id)
 				} else if (name == "/mongodb_slave") {
-					if (workers["slave"] == undefined) {
-						workers["slave"] = {};
+					if (workers[0] == undefined) {
+						workers[0] = {};
+						workerCount[0]=0
 					}
-					workers["slave"]["dbId"] = container.Id;
+					workers[0]["dbId"] = container.Id;
 					console.log("mongodb_slave : ",container.Id)
 				}
 			});
@@ -58,7 +60,7 @@ function initialiseWorkers() {
 					workers["master"]["networkId"] = network.Id;
 					console.log("master Network: ",network.Id)
 				} else if (network.Name == "slave_network") {
-					workers["slave"]["networkId"] = network.Id;
+					workers[0]["networkId"] = network.Id;
 					console.log("slave Network: ",network.Id)
 				}
 			});
@@ -67,18 +69,29 @@ function initialiseWorkers() {
 }
 
 function getNextIndex() {
-	var i = 1;
-	while (i <= workerCount.length) {
-		if (i != workerCount[i - 1]) {
-			workerCount[i - 1] = i;
+	var i = 0;
+	while (i < workerCount.length) {
+		if (i != workerCount[i]) {
+			workerCount[i] = i;
 			break;
 		}
 		i += 1;
 	}
-	if (i == workerCount.length + 1) {
+	if (i == workerCount.length) {
 		workerCount.push(i);
 	}
 	return i;
+}
+
+function liveWorkersCount(){
+	var i = 0,count=0;
+	while (i < workerCount.length) {
+		if (workerCount[i]!=-1){
+			count+=1	
+		} 
+		i+=1
+	}
+	return count
 }
 async function createWorker(callback) {
 	var workerIndex = await getNextIndex();
@@ -91,7 +104,7 @@ async function createWorker(callback) {
 			if (err) {
 				console.log("92",err);
 				return 
-				//callback(err);
+				callback(err);
 			}
 
 			console.log("Replicated mongo Successfully")
@@ -105,7 +118,7 @@ async function createWorker(callback) {
 					if ("103",err) {
 						console.log("104",err);
 						return 
-						//callback(err);
+						callback(err);
 					}
 					
 					console.log("Network Created\n");
@@ -116,7 +129,7 @@ async function createWorker(callback) {
 							);
 							console.log(err);
 							return 
-							//callback(err);
+							callback(err);
 						}
 						console.log("Connected Mongo to network : ","slave_network_" + workerIndex)
 						docker.run(
@@ -151,7 +164,7 @@ async function createWorker(callback) {
 											);
 											console.log(err);
 											return 
-											//callback(err);
+											callback(err);
 										}
 										console.log("Connected dbworker to slave network")
 										docker.listNetworks((err, networks) => {
@@ -160,7 +173,7 @@ async function createWorker(callback) {
 													"failed to list networks"
 												);
 												return 
-												//callback(err);
+												callback(err);
 											}
 											networks.forEach((network) => {
 												if (
@@ -281,58 +294,64 @@ function replicateContainer(
 function deleteWorker(workerIndex, callback) {
 	console.log("Deleting Container...")
 	var container = docker.getContainer(workers[workerIndex].serverId);//error here, serverId of undefined
+	console.log("Container to be deleted : ",container.modem.host)
+	
 	container.stop((err,data)=>{
 	if (err) {
 			console.log("265",err);
 			return 
-			//callback(err);
-		}
-	container.remove((err, data) => {
+			callback(err);
+		}/*
+		container.remove((err, data) => {
 		if (err) {
 			console.log("271",err);
 			return 
-			//callback(err);
-		}
+			callback(err);
+		}*/
 		console.log("worker container Deleted successfully");
 		container = docker.getContainer(workers[workerIndex].mongodbId);
-		var mongoImage = docker.getImage("mongodb_slave_"+workerIndex);
+		var mongoImage = docker.getImage("mongodb_slave_" + workerIndex);
 		container.stop( (err,data) =>{
 			if (err) {
 					console.log("280",err)
 					return 
-					//callback(err);
+					callback(err);
 				}
-			container.remove((err, data) => {
+			/*container.remove((err, data) => {
 				if (err) {
 					console.log("286",err)
 					return 
-					//callback(err);
-				}
+					callback(err);
+				}*/
 				console.log("mongodb container Deleted successfully");
-				mongoImage.remove((err,data) => {
+				//console.log("Image to be deleted: ",mongoImage)
+				mongoImage.remove({force:true},(err,data) => {
 					if (err) {
-						console.log("Failed to remove image");
+						console.log("Failed to remove image:",err);
 						return;
 					}
 					return;
 				});
+				console.log("Deleted Mongo Image")
 				var network = docker.getNetwork(workers[workerIndex].networkId);
+				console.log("Network to be deleted: ",network)
 				network.remove((err, data) => {
 					if (err) {
-					console.log("301",err)
+						console.log("301",err)
 						return 
-						//callback(err);
+						callback(err);
 					}
 					console.log(data);
 					console.log("Slave Deleted successfully");
 					delete workers[workerIndex];
-					workerCount[workerIndex - 1] = 0;
+					workerCount[workerIndex] = -1;
+					console.log(workers,workerCount)
 					return 
-					//callback(null, data);
+					callback(null, data);
 				});
-			});
+			//});
 		})
-	});
+	//});
 	})
 }
 
@@ -347,28 +366,43 @@ async function updateWorkers() {
 
 	// var newWorkers = Math.floor(reqRate / 20);
 
-	var newWorkers= reqRate
+	
+	var newWorkers = reqRate
+	if(reqRate==0){
+		newWorkers = 1
+	}
 	reqRate = 0;
-	console.log("Scale Up needed : " + newWorkers);
-
-	if (newWorkers > workerCount.length) {
-		var diff = newWorkers - workerCount.length;
+	console.log("Required Slaves : " + newWorkers);
+	var count = liveWorkersCount()
+	console.log("Current slaves count :",count)
+	if (newWorkers > count) {
+		var diff = newWorkers - count;
 		console.log("Creating workers..")
 		while (diff) {	
 			console.log("Diff : ",diff)		
-			await createWorker()
+			await createWorker((err,data)=>{
+				if(err){
+					throw err
+					return
+				}
+				console.log(data)
+			})
 			diff = diff - 1;
 			console.log("Diff (line 330): ",diff)
 			 
 		}
 		console.log("Scale Up succeeded")
 		return
-	} else if (newWorkers < workerCount.length) {
-		var diff = workerCount.length - newWorkers;
+	} else if (newWorkers < count) {
+		var diff = count - newWorkers;
 		console.log("deleting workers..")
 		while (diff) {
 			console.log("Diff : ",diff)
-			await deleteWorker(diff)
+			await deleteWorker(diff,(err,data)=>{
+				if(err){
+				throw err
+				}				
+			})
 			diff = diff - 1;
 		}
 		console.log("Scale down succeeded")
@@ -494,5 +528,5 @@ exports.workerList = (req, res, next) => {
 initialiseWorkers();
 
 //setInterval(updateWorkers, 1000 * 120);
-setInterval(updateWorkers, 1000 * 30);
+setInterval(updateWorkers, 1000 * 60);
 
