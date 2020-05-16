@@ -249,7 +249,7 @@ function replicateContainer (
 						console.log('Commit Result', res);
 						docker.run(
 							newImageName,
-							['/bin/bash'],
+							[],
 							undefined,
 							{
 								name: newContainerName,
