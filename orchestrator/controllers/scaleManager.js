@@ -140,7 +140,7 @@ async function createWorker (callback) {
 							{
 								name: 'dbworker_slave_' + workerIndex,
 								Env: ['ROLE=slave', 'DB_HOST=mongodb_slave_' + workerIndex],
-								HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network' ,VolumesFrom:'mongodb_master' },
+								HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network' },
 							},
 							(err, data, container) => {
 								if (err) {
@@ -260,6 +260,7 @@ function replicateContainer (
 									Hostname: newContainerName,
 									AutoRemove: true,
 									NetworkMode: 'rabbitmq_network',
+									VolumesFrom: ['mongodb_master']
 								},
 							},
 							(err, data, container) => {

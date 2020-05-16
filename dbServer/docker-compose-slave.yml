@@ -3,8 +3,8 @@ version: "3.5"
 services:
     dbworker_slave:
         build: .
-        image: dbworker_slave:latest
-        container_name: dbworker_slave
+        image: dbworker_slave_0:latest
+        container_name: dbworker_slave_0
         #    command: npm start
         restart: always
         depends_on:
@@ -21,7 +21,7 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock
     mongodb_slave:
         image: mongo
-        container_name: mongodb_slave
+        container_name: mongodb_slave_0
         expose:
             - "27017"
         networks:
