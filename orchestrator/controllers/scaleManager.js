@@ -8,7 +8,6 @@ var workerCount = [];
 var workers = {};
 var zookeeper = require('node-zookeeper-client');
 // var PID = {};
-
 process.on('unhandledRejection', error => {
 	console.log('unhandledRejection', error);
 });
@@ -296,6 +295,7 @@ function deleteWorker (workerIndex, callback) {
 			// callback(err); // Unreachable Code.
 		}
 		/*
+		//Enabled autoremove so no need to remove again
 		container.remove((err, data) => {
 		if (err) {
 			console.log("271",err);
@@ -398,8 +398,9 @@ async function updateWorkers () {
 }
 
 exports.crashMaster = (req, res, next) => {
+	console.log("Crash master API")
 	if (workers.master === undefined) res.status(404).send();
-
+	
 	for (var key in workers) {
 		if (workers[key].serverId === workers.master.serverId) {
 			deleteWorker(key, (err, data) => {
@@ -459,19 +460,26 @@ exports.crashMaster = (req, res, next) => {
 exports.crashSlave = (req, res, next) => {
 	let maxPID = Number;
 	let CID = String;
-
+	console.log("Crash API")
 	docker.listContainers((err, containers) => {
 		if (err) return res.status(500).send(err);
+		console.log("Before for each..")
 		containers.forEach((containerInfo) => {
 			docker.getContainer(containerInfo.Id).inspect((err, data) => {
-				if (err) console.error(err);
+
+				console.log("Docker Inspect")
+				if (err) { console.error(err);return res.status(500).send({})}
+
 				console.log(data.State.Pid);
 				if (data.Name === '/dbworker_slave' && data.State.Pid > maxPID) {
 					maxPID = data.State.Pid;
 					CID = containerInfo.Id;
+					console.log("max:",maxPID)
 				}
 			});
+			
 		});
+		console.log("End of Foreach")
 		for (var key in workers) {
 			if (workers[key].serverId === CID) {
 				deleteWorker(key, (err, data) => {
@@ -479,10 +487,12 @@ exports.crashSlave = (req, res, next) => {
 						console.log(err);
 						res.status(500).send({});
 					}
+					console.log("Delete Success..")
 					res.status(200).send({});
 				});
 			}
 		}
+
 	});
 };
 
@@ -491,24 +501,25 @@ exports.workerList = (req, res, next) => {
 		if (err) {
 			return res.status(500).send(err);
 		}
-		const IDs = [];
-		containers.forEach((containerInfo) => {
+		IDs = [];
+		 containers.forEach((containerInfo) => {
 			const container = docker.getContainer(containerInfo.Id);
-			IDs.push(getPid(container))
+			container.inspect((err, data) => {
+				if (err) {console.error(err);
+				return
+				}
+				console.log(data.State.Pid);
+				IDs.push(data.State.Pid)
+				
+			});
+			
 			console.log('in', IDs);
 		});		
 		console.log('out', IDs);
 		res.status(200).send(IDs.sort());
 	});
 };
-function getPid(container)=>{
-	return container.inspect((err, data) => {
-				if (err) console.error(err);
-				console.log(data.State.Pid);
-				return data.State.Pid
-			});
-			
-})
+
 
 initialiseWorkers();
 
