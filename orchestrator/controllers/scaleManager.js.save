@@ -11,6 +11,7 @@ var zookeeper = require('node-zookeeper-client');
 
 process.on('unhandledRejection', error => {
 	console.log('unhandledRejection', error);
+Y
 });
 
 function initialiseWorkers () {
