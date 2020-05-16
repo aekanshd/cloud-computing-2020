@@ -140,7 +140,8 @@ async function createWorker (callback) {
 							{
 								name: 'dbworker_slave_' + workerIndex,
 								Env: ['ROLE=slave', 'DB_HOST=mongodb_slave_' + workerIndex],
-								HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network' ,VolumesFrom:['mongodb_master'] },
+
+								HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network' }
 							},
 							(err, data, container) => {
 								if (err) {
@@ -259,7 +260,7 @@ function replicateContainer (
 								HostConfig: {
 									Hostname: newContainerName,
 									AutoRemove: true,
-									NetworkMode: 'rabbitmq_network',
+									NetworkMode: 'rabbitmq_network'
 								},
 							},
 							(err, data, container) => {
@@ -362,14 +363,14 @@ async function updateWorkers () {
 	var newWorkers = Math.floor(reqRate / 20);
 
 
-	// var newWorkers = reqRate
+	/* var newWorkers = reqRate
 	if (newWorkers === 0) {
 		newWorkers = 1;
-	}
+	}*/
 	reqRate = 0;
-	console.log('Required Slaves : ' + newWorkers);
-	var count = liveWorkersCount();
-	console.log('Current slaves count :', count);
+	console.log('Required New Slaves : ' + newWorkers);
+	var count = liveWorkersCount()-1;
+	console.log('Current Spawned slaves count :', count);
 	if (newWorkers > count) {
 		let diff = newWorkers - count;
 		console.log('Creating workers..');

@@ -14,7 +14,7 @@ services:
             - rabbitmq_network
             - zookeeper_network
         environment:
-            - TEAM_NAME=CC_0276_0652_0706_1808
+            - TEAM_NAME=CC276652706_1808
             - ROLE=slave
             - DB_HOST=mongodb_slave
         volumes:
@@ -27,7 +27,7 @@ services:
         networks:
             - slave_network
         environment:
-            - TEAM_NAME=CC_0276_0652_0706_1808
+            - TEAM_NAME=CC276652706_1808
             - MONGO_INITDB_DATABASE=rideshare
 networks:
     slave_network:
