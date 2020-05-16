@@ -140,7 +140,9 @@ async function createWorker (callback) {
 							{
 								name: 'dbworker_slave_' + workerIndex,
 								Env: ['ROLE=slave', 'DB_HOST=mongodb_slave_' + workerIndex],
+
 								HostConfig: { AutoRemove: true, NetworkMode: 'rabbitmq_network' },
+
 							},
 							(err, data, container) => {
 								if (err) {
