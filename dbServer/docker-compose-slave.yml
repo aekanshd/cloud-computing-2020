@@ -3,8 +3,8 @@ version: "3.5"
 services:
     dbworker_slave:
         build: .
-        image: dbworker_slave_0:latest
-        container_name: dbworker_slave_0
+        image: dbworker_slave:latest
+        container_name: dbworker_slave
         #    command: npm start
         restart: always
         depends_on:
@@ -14,20 +14,20 @@ services:
             - rabbitmq_network
             - zookeeper_network
         environment:
-            - TEAM_NAME=CC_0276_0652_0706_1808
+            - TEAM_NAME=CC276652706_1808
             - ROLE=slave
             - DB_HOST=mongodb_slave
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
     mongodb_slave:
         image: mongo
-        container_name: mongodb_slave_0
+        container_name: mongodb_slave
         expose:
             - "27017"
         networks:
             - slave_network
         environment:
-            - TEAM_NAME=CC_0276_0652_0706_1808
+            - TEAM_NAME=CC276652706_1808
             - MONGO_INITDB_DATABASE=rideshare
 networks:
     slave_network:
