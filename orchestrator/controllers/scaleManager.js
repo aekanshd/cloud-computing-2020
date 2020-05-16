@@ -37,14 +37,14 @@ function initialiseWorkers () {
 					if (workers.master === undefined) {
 						workers.master = {};
 					}
-					workers.master.dbId = container.Id;
+					workers.master.mongodbId = container.Id;
 					console.log('mongodb_master : ', container.Id);
 				} else if (name === '/mongodb_slave') {
 					if (workers[0] === undefined) {
 						workers[0] = {};
 						workerCount[0] = 0;
 					}
-					workers[0].dbId = container.Id;
+					workers[0].mongodbId = container.Id;
 					console.log('mongodb_slave : ', container.Id);
 				}
 			});
@@ -303,6 +303,7 @@ function deleteWorker (workerIndex, callback) {
 			callback(err);
 		} */
 		console.log('worker container Deleted successfully');
+		console.log('mongodb ID to be deleted:', workers[workerIndex].mongodbId);
 		container = docker.getContainer(workers[workerIndex].mongodbId);
 		var mongoImage = docker.getImage('mongodb_slave_' + workerIndex);
 		container.stop((err, data) => {
@@ -342,6 +343,7 @@ function deleteWorker (workerIndex, callback) {
 			});
 			// });
 		});
+		return '200';
 	// });
 	});
 }
@@ -397,9 +399,8 @@ async function updateWorkers () {
 }
 
 exports.crashMaster = (req, res, next) => {
-	console.log("Crash master API")
+	console.log('Crash master API');
 	if (workers.master === undefined) res.status(404).send();
-	
 	for (var key in workers) {
 		if (workers[key].serverId === workers.master.serverId) {
 			deleteWorker(key, (err, data) => {
@@ -437,7 +438,7 @@ exports.crashMaster = (req, res, next) => {
 					docker.getContainer(data.NetworkSettings.Networks.bridge.NetworkID).inspect((err_1, data_1) => {
 						data_1.Containers.forEach((containerID) => {
 							if (containerID !== CID) {
-								workers.master.dbId = containerID;
+								workers.master.mongodbId = containerID;
 							}
 						});
 					});
@@ -452,66 +453,73 @@ exports.crashMaster = (req, res, next) => {
 	});
 
 	// docker.getContainer(workers["master"]["serverId"]).stop();
-	// docker.getContainer(workers["master"]["dbId"]).stop();
+	// docker.getContainer(workers["master"]["mongodbId"]).stop();
 	res.status(200).send({});
 };
 
 exports.crashSlave = (req, res, next) => {
-	let maxPID = Number;
-	let CID = String;
-	console.log("Crash API")
+	let maxPID = -1;
+	let CID = 'String';
+	console.log('Crash API');
 	docker.listContainers((err, containers) => {
 		if (err) return res.status(500).send(err);
-		console.log("Before for each..")
+		console.log('Before for each..');
 		containers.forEach((containerInfo) => {
 			docker.getContainer(containerInfo.Id).inspect((err, data) => {
-				console.log("Docker Insepect")
-				if (err) { console.error(err);return res.status(500).send({})}
+				console.log('Docker Insepect');
+				if (err) { console.error(err); return res.status(500).send({}); }
 
 				console.log(data.State.Pid);
 				if (data.Name === '/dbworker_slave' && data.State.Pid > maxPID) {
 					maxPID = data.State.Pid;
 					CID = containerInfo.Id;
-					console.log("max:",maxPID)
+					console.log('max:', maxPID);
 				}
 			});
-			
 		});
-		console.log("End of Foreach")
-		for (var key in workers) {
-			if (workers[key].serverId === CID) {
-				deleteWorker(key, (err, data) => {
-					if (err) {
-						console.log(err);
-						res.status(500).send({});
-					}
-					console.log("Delete Success..")
+		console.log('End of Foreach');
+		setTimeout(() => {
+			console.log('Inside Delete Logic');
+			for (var key in workers) {
+				if (workers[key].serverId === CID) {
+					console.log('Preparing to delete worker with containerID', CID);
+					deleteWorker(key, (err, data) => {
+						if (err) {
+							console.log(err);
+							res.status(200).send({});
+						}
+						console.log('Delete Success..');
+						res.status(200).send({});
+					});
+					console.log('Delete Success..');
 					res.status(200).send({});
-				});
+				}
 			}
-		}
-
+		}, 1000);
 	});
 };
 
-exports.workerList = (req, res, next) => {
+exports.workerList = async (req, res, next) => {
 	docker.listContainers((err, containers) => {
 		if (err) {
 			return res.status(500).send(err);
 		}
 		const IDs = [];
 		containers.forEach((containerInfo) => {
-			const container = docker.getContainer(containerInfo.Id);
-			container.inspect((err, data) => {
+			docker.getContainer(containerInfo.Id).inspect((err, data) => {
 				if (err) console.error(err);
-				console.log(data.State.Pid);
-				// if (data["Name"].startsWith("/dbworker"))
-				IDs.push(data.State.Pid);
+				if (data.Name.startsWith('/dbworker')) {
+					console.log('Adding PID:', data.State.Pid);
+					IDs.push(data.State.Pid);
+				}
 			});
 			console.log('in', IDs);
 		});
 		console.log('out', IDs);
-		res.status(200).send(IDs.sort());
+		setTimeout(() => {
+			console.log('IDs are:', IDs.sort());
+			res.status(200).send(IDs.sort());
+		}, 1000);
 	});
 };
 
