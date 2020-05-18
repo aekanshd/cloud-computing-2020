@@ -5,8 +5,8 @@ var zookeeper = require("node-zookeeper-client");
 const { spawn } = require("child_process");
 var os = require("os");
 var hostname = os.hostname();
-const Docker = require("dockerode");
-const docker = new Docker();
+// const Docker = require("dockerode");
+// const docker = new Docker();
 
 CreateMode = zookeeper.CreateMode;
 Event = zookeeper.Event;
@@ -24,10 +24,10 @@ state = {
 
 console.log("Container ID:", hostname)
 
-docker.getContainer(hostname).inspect(function (err, data) {
-	console.log("Container PID:", data["State"]["Pid"]);
-	state.pid = data["State"]["Pid"];
-});
+// docker.getContainer(hostname).inspect(function (err, data) {
+// 	console.log("Container PID:", data["State"]["Pid"]);
+// 	state.pid = data["State"]["Pid"];
+// });
 
 // Connect to server at localhost and initiate client
 var client = zookeeper.createClient("zoo:2181", { retries: 3 });
@@ -117,7 +117,7 @@ client.once("connected", () => {
 
 	server.on("close", (code) => {
 		console.log(`Child process exited with code ${code}\nStanding by until manual exit.`);
-		//process.exit(1);
+		if(process.env.ROLE === 'slave') process.exit(1);
 	});
 
 	server.on("error", (error) => {
