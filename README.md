@@ -34,3 +34,7 @@ This folder contains all the path's functions which are related to one another. 
 ## Why the split?
 
 It helps keeping the code clean, and having related code together.
+
+## Branches
+
+Check out the branches to view the assignments and the final project
