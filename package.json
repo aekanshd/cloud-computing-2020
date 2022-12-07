@@ -4,9 +4,9 @@
   "description": "A repository for Mini Project of Cloud Computing, 6th Sem, Computer Science, PES University.",
   "main": "server.js",
   "dependencies": {
-    "body-parser": "^1.19.0",
+    "body-parser": "^1.20.1",
     "cookie-parser": "^1.4.4",
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "multer": "^1.4.2"
   },
   "devDependencies": {},
